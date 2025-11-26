@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - k6-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  k6-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./clients:/app/clients
+      - ./core:/app/core
+      - ./shared:/app/shared
+      - ./dist:/app/dist
+    environment:
+      - CLIENT=${CLIENT:-client-a}
+      - ENV=${ENV:-default}
+      - REDIS_URL=redis://redis:6379
+    command: --client=${CLIENT:-client-a} --env=${ENV:-default} --test=${TEST:-example.ts}
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - k6-network
+
+networks:
+  k6-network:
+    driver: bridge

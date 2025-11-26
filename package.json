@@ -1,0 +1,46 @@
+{
+  "name": "k6-enterprise-framework",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Enterprise-grade k6 load testing framework with multi-client support, Redis integration, and multiple test types",
+  "main": "dist/core/cli.js",
+  "bin": {
+    "k6-runner": "./dist/core/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/core/cli.js",
+    "docker:build": "docker-compose build",
+    "docker:run": "docker-compose up"
+  },
+  "keywords": [
+    "k6",
+    "load-testing",
+    "performance",
+    "testing",
+    "redis",
+    "docker"
+  ],
+  "author": "",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/k6-enterprise-framework.git"
+  },
+  "devDependencies": {
+    "@types/k6": "^0.54.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "k6": "^0.0.0"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.0",
+    "redis": "^4.7.0",
+    "fs-extra": "^11.2.0",
+    "glob": "^11.0.0",
+    "minimist": "^1.2.8",
+    "@types/minimist": "^1.2.5",
+    "@types/fs-extra": "^11.0.4",
+    "@types/glob": "^8.1.0"
+  }
+}

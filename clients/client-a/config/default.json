@@ -20,5 +20,36 @@
   "thresholds": {
     "http_req_duration": ["p(95)<500"],
     "http_req_failed": ["rate<0.01"]
-  }
+  },
+  "test_cases": [
+    {
+      "name": "Get Public Crocodiles",
+      "method": "GET",
+      "path": "/public/crocodiles/",
+      "headers": { "Accept": "application/json" },
+      "expected_status": 200
+    },
+    {
+      "name": "Get Single Crocodile",
+      "method": "GET",
+      "path": "/public/crocodiles/1/",
+      "expected_status": 200,
+      "checks": {
+        "is_male": "json('sex') === 'M'",
+        "has_name": "json('name') !== ''"
+      }
+    },
+    {
+      "name": "Auth Login (Example)",
+      "method": "POST",
+      "path": "/auth/token/login/",
+      "body": {
+        "username": "testuser",
+        "password": "testpassword"
+      },
+      "headers": { "Content-Type": "application/json" },
+      "expected_status": 401,
+      "description": "Expected failure with dummy credentials"
+    }
+  ]
 }

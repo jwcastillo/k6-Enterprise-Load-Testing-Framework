@@ -8,10 +8,12 @@
     "k6-runner": "./dist/core/cli.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && node scripts/copy-assets.js",
     "start": "node dist/core/cli.js",
     "docker:build": "docker-compose build",
-    "docker:run": "docker-compose up"
+    "docker:run": "docker-compose up",
+    "redis:load": "node scripts/load-redis-data.js",
+    "redis:clean": "node scripts/clean-redis-data.js"
   },
   "keywords": [
     "k6",

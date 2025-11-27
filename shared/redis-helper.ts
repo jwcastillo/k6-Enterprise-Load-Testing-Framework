@@ -34,8 +34,15 @@ export class RedisHelper {
   /**
    * Get a value by key
    */
-  public async get(key: string): Promise<string> {
-    return await this.client.get(key);
+  public async get(key: string): Promise<string | null> {
+    try {
+      return await this.client.get(key);
+    } catch (err: any) {
+      if (err && err.toString().includes('redis: nil')) {
+        return null;
+      }
+      throw err;
+    }
   }
 
   /**
@@ -109,7 +116,13 @@ export class RedisHelper {
    */
   public async hgetall(key: string): Promise<Record<string, string>> {
     const result = await this.client.hgetall(key);
-    // Convert array response to object
+    
+    // k6 Redis client returns object directly, not array
+    if (result && typeof result === 'object' && !Array.isArray(result)) {
+      return result as Record<string, string>;
+    }
+    
+    // Fallback: Convert array response to object (for compatibility)
     const obj: Record<string, string> = {};
     if (Array.isArray(result)) {
       for (let i = 0; i < result.length; i += 2) {

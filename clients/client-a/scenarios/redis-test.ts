@@ -2,6 +2,7 @@ import { check, sleep } from 'k6';
 import { ConfigLoader } from '../../../core/config.js';
 import { AuthService } from '../lib/auth-service.js';
 import { RedisHelper } from '../../../shared/redis-helper.js';
+import { DataHelper } from '../../../shared/helpers/DataHelper.js';
 
 const config = new ConfigLoader().load();
 const authService = new AuthService(config.baseUrl);
@@ -38,10 +39,9 @@ export async function setupData() {
 
   const users = [];
   for (let i = 0; i < 10; i++) {
-    const timestamp = Date.now() + i;
-    const username = `test_user_${timestamp}`;
-    const email = `${username}@test.com`;
-    const password = 'TestPass123!';
+    const username = `test_user_${DataHelper.randomString(8)}`;
+    const email = DataHelper.randomEmail();
+    const password = DataHelper.randomPassword();
 
     // Create user via API
     const registerRes = authService.register(username, email, password);

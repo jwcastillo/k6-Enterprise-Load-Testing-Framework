@@ -2,6 +2,7 @@ import { browser } from 'k6/experimental/browser';
 import { check, sleep } from 'k6';
 import { ConfigLoader } from '../../../core/config.js';
 import { AuthService } from '../lib/auth-service.js';
+import { DataHelper } from '../../../shared/helpers/DataHelper.js';
 
 const config = new ConfigLoader().load();
 const authService = new AuthService(config.baseUrl);
@@ -28,10 +29,9 @@ export const options = {
 
 export default async function () {
   // PART 1: API - Create user via API
-  const timestamp = Date.now();
-  const username = `user_${timestamp}`;
-  const email = `${username}@test.com`;
-  const password = 'TestPass123!';
+  const username = `user_${DataHelper.randomString(8)}`;
+  const email = DataHelper.randomEmail();
+  const password = DataHelper.randomPassword();
 
   console.log(`Creating user ${username} via API...`);
   const registerRes = authService.register(username, email, password);
@@ -58,6 +58,7 @@ export default async function () {
     page.locator('input[name="password"]').type(password);
     
     // Take screenshot before login
+    const timestamp = Date.now();
     page.screenshot({ path: `screenshots/before-login-${timestamp}.png` });
 
     // Submit form

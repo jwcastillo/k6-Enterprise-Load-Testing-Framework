@@ -1,6 +1,7 @@
 import { check, sleep } from 'k6';
 import { ConfigLoader } from '../../../core/config.js';
 import { AuthService } from '../lib/auth-service.js';
+import { DataHelper } from '../../../shared/helpers/DataHelper.js';
 
 const config = new ConfigLoader().load();
 const authService = new AuthService(config.baseUrl);
@@ -24,10 +25,9 @@ let authToken = '';
 
 export default function () {
   // Step 1: Register a new user
-  const timestamp = Date.now();
-  const username = `user_${timestamp}`;
-  const email = `${username}@test.com`;
-  const password = 'TestPass123!';
+  const username = `user_${DataHelper.randomString(8)}`;
+  const email = DataHelper.randomEmail();
+  const password = DataHelper.randomPassword();
 
   const registerRes = authService.register(username, email, password);
   const registerSuccess = check(registerRes, {

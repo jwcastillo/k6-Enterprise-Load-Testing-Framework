@@ -67,7 +67,21 @@ function parseK6Output(jsonLines) {
   let testInfo = {
     startTime: null,
     endTime: null,
-    duration: 0
+    duration: 0,
+    vus: 0,
+    iterations: 0
+  };
+
+  // Key metrics we want to track
+  const keyMetrics = {
+    http_req_waiting: 'TTFB (Time to First Byte)',
+    http_req_duration: 'Request Duration',
+    http_reqs: 'HTTP Requests',
+    http_req_failed: 'Failed Requests',
+    iterations: 'Iterations',
+    vus: 'Virtual Users',
+    data_received: 'Data Received',
+    data_sent: 'Data Sent'
   };
 
   jsonLines.forEach(line => {
@@ -81,7 +95,8 @@ function parseK6Output(jsonLines) {
           metrics[metric] = {
             type: metricData.type,
             values: [],
-            tags: metricData.tags || {}
+            tags: metricData.tags || {},
+            displayName: keyMetrics[metric] || metric
           };
         }
         
@@ -91,6 +106,7 @@ function parseK6Output(jsonLines) {
       if (data.type === 'Point') {
         const { metric, data: pointData } = data;
         
+        // Track checks
         if (metric === 'checks') {
           const checkName = pointData.tags?.check || 'unknown';
           if (!checks[checkName]) {
@@ -101,6 +117,14 @@ function parseK6Output(jsonLines) {
           } else {
             checks[checkName].failed++;
           }
+        }
+        
+        // Track VUs and iterations
+        if (metric === 'vus' && pointData.value > testInfo.vus) {
+          testInfo.vus = pointData.value;
+        }
+        if (metric === 'iterations') {
+          testInfo.iterations++;
         }
         
         // Track test duration
@@ -314,6 +338,30 @@ function generateHTML(metrics, checks, testInfo) {
         <h3>Duration</h3>
         <div class="value">${duration}s</div>
       </div>
+      ${metrics.http_req_waiting ? `
+      <div class="stat-card">
+        <h3>TTFB P90</h3>
+        <div class="value">${calculateStats(metrics.http_req_waiting.values).p90.toFixed(2)}ms</div>
+      </div>
+      ` : ''}
+      ${metrics.http_reqs ? `
+      <div class="stat-card">
+        <h3>RPS (Avg)</h3>
+        <div class="value">${(metrics.http_reqs.values.length / (testInfo.duration / 1000)).toFixed(2)}</div>
+      </div>
+      ` : ''}
+      ${testInfo.vus > 0 ? `
+      <div class="stat-card">
+        <h3>Max VUs</h3>
+        <div class="value">${testInfo.vus}</div>
+      </div>
+      ` : ''}
+      ${testInfo.iterations > 0 ? `
+      <div class="stat-card">
+        <h3>Iterations</h3>
+        <div class="value">${testInfo.iterations}</div>
+      </div>
+      ` : ''}
     </div>
 
     <div class="section">

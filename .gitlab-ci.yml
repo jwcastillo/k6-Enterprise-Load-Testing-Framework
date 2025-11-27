@@ -18,6 +18,12 @@ build:
       - dist/
     expire_in: 1 hour
 
+variables:
+  CLIENT: "client-a"
+  ENV: "default"
+  TEST: "example.ts"
+  PROFILE: "smoke"
+
 test:
   stage: test
   before_script:
@@ -29,5 +35,5 @@ test:
     - apt-get install -y k6
   script:
     - npm ci
-    - node dist/core/cli.js --client=client-a --test=test-helpers.ts
-    - node dist/core/cli.js --client=client-a --test=example.ts --profile=smoke
+    - echo "Running test with Client=$CLIENT, Env=$ENV, Test=$TEST, Profile=$PROFILE"
+    - node dist/core/cli.js --client=$CLIENT --env=$ENV --test=$TEST --profile=$PROFILE

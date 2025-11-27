@@ -27,15 +27,34 @@ args.forEach(arg => {
   options[key.replace('--', '')] = value;
 });
 
-const { input, output = 'report.html' } = options;
+// Generate timestamp for report filename
+const now = new Date();
+const timestamp = now.toISOString().replace(/[:.]/g, '-').replace('T', '_').split('.')[0];
+
+// Extract test name from input file if not provided
+let testName = options.test || 'test';
+if (options.input && !options.test) {
+  const basename = path.basename(options.input, '.json');
+  testName = basename.replace(/_output$/, '').replace(/_/g, '-');
+}
+
+// Default output: reports/<test-name>/<test-name>_<timestamp>.html
+const defaultOutput = path.join('reports', testName, `${testName}_${timestamp}.html`);
+const { input, output = defaultOutput, test = testName } = options;
 
 if (!input && process.stdin.isTTY) {
-  console.error('Usage: node bin/report.js --input=<json-file> --output=<html-file>');
-  console.error('   or: k6 run --out json=- test.js | node bin/report.js --output=report.html');
+  console.error('Usage: node bin/report.js --input=<json-file> [--output=<html-file>] [--test=<test-name>]');
+  console.error('   or: k6 run --out json=- test.js | node bin/report.js [--output=<html-file>] [--test=<test-name>]');
   console.error('');
   console.error('Options:');
   console.error('  --input   Input JSON file from k6 (optional if piping)');
-  console.error('  --output  Output HTML file (default: report.html)');
+  console.error('  --output  Output HTML file (default: reports/<test-name>/<test-name>_<timestamp>.html)');
+  console.error('  --test    Test name for organizing reports (default: extracted from input filename)');
+  console.error('');
+  console.error('Examples:');
+  console.error('  node bin/report.js --input=output.json');
+  console.error('  node bin/report.js --input=output.json --test=api-test');
+  console.error('  k6 run --out json=output.json test.js && node bin/report.js --input=output.json');
   process.exit(1);
 }
 
@@ -378,11 +397,11 @@ async function main() {
 
   if (input) {
     // Read from file
-    console.log(`Reading k6 output from: ${input}`);
+    console.log(`📖 Reading k6 output from: ${input}`);
     jsonData = await fs.readFile(input, 'utf-8');
   } else {
     // Read from stdin
-    console.log('Reading k6 output from stdin...');
+    console.log('📖 Reading k6 output from stdin...');
     const chunks = [];
     for await (const chunk of process.stdin) {
       chunks.push(chunk);
@@ -391,20 +410,49 @@ async function main() {
   }
 
   const lines = jsonData.trim().split('\n').filter(line => line.trim());
-  console.log(`Parsing ${lines.length} JSON lines...`);
+  console.log(`🔍 Parsing ${lines.length} JSON lines...`);
 
   const { metrics, checks, testInfo } = parseK6Output(lines);
   
-  console.log(`Found ${Object.keys(metrics).length} metrics`);
-  console.log(`Found ${Object.keys(checks).length} checks`);
+  console.log(`📊 Found ${Object.keys(metrics).length} metrics`);
+  console.log(`✅ Found ${Object.keys(checks).length} checks`);
 
   const html = generateHTML(metrics, checks, testInfo);
   
   const outputPath = path.resolve(output);
+  
+  // Ensure directory exists
+  await fs.ensureDir(path.dirname(outputPath));
+  
+  // Write HTML report
   await fs.writeFile(outputPath, html);
   
-  console.log(`✅ Report generated: ${outputPath}`);
-  console.log(`📊 Open in browser: file://${outputPath}`);
+  // Create metadata file
+  const metadataPath = outputPath.replace('.html', '_metadata.json');
+  const metadata = {
+    testName: test,
+    timestamp: now.toISOString(),
+    reportFile: path.basename(outputPath),
+    inputFile: input || 'stdin',
+    totalChecks: Object.values(checks).reduce((sum, c) => sum + c.passed + c.failed, 0),
+    passedChecks: Object.values(checks).reduce((sum, c) => sum + c.passed, 0),
+    failedChecks: Object.values(checks).reduce((sum, c) => sum + c.failed, 0),
+    duration: testInfo.duration,
+    metricsCount: Object.keys(metrics).length
+  };
+  
+  await fs.writeJson(metadataPath, metadata, { spaces: 2 });
+  
+  console.log('');
+  console.log('✅ Report generated successfully!');
+  console.log(`📁 Report: ${outputPath}`);
+  console.log(`� Metadata: ${metadataPath}`);
+  console.log(`🌐 Open in browser: file://${outputPath}`);
+  console.log('');
+  console.log(`📊 Summary:`);
+  console.log(`   Test: ${test}`);
+  console.log(`   Checks: ${metadata.passedChecks}/${metadata.totalChecks} passed`);
+  console.log(`   Duration: ${(testInfo.duration / 1000).toFixed(2)}s`);
 }
 
 main().catch(err => {

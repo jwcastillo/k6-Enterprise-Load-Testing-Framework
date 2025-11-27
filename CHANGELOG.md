@@ -73,6 +73,99 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - .env.example for environment variables
 - TypeScript configuration with path aliases
 
+## [1.1.0] - 2025-11-27
+
+### Added
+- **Common Helper Utilities** (32 new methods, 441 lines of code)
+  - **DataHelper** (328 lines)
+    - `randomBoolean()` - Random true/false value
+    - `randomPrice(min, max)` - Random price with decimals
+    - `randomName()` - Person name object (first, last, full)
+    - `randomCompany()` - Company name generator
+    - `randomAddress()` - Full address object (street, city, state, zip, country)
+    - `randomProduct()` - E-commerce product with id, name, price, category
+    - `randomCreditCard()` - Valid test card using Luhn algorithm
+    - `randomDate(start, end)` - Random date in range
+    - `randomUser()` - Complete user object with all fields
+  
+  - **DateHelper** (338 lines, 40+ methods verified)
+    - Date formatting (ISO, custom formats)
+    - Date arithmetic (add/subtract days, hours, minutes)
+    - Date comparisons (before, after, past, future, today)
+    - Timestamp utilities (Unix, milliseconds)
+    - Random date generation
+  
+  - **RequestHelper** (243 lines)
+    - Instance-based HTTP client (existing)
+    - Static utility methods (10 new):
+      - `buildAuthHeaders(token, type)` - Build authentication headers
+      - `parseJsonResponse(response)` - Safe JSON parsing
+      - `extractValue(response, path)` - Extract nested JSON values
+      - `isSuccess(response)` - Check 2xx status
+      - `hasStatus(response, code)` - Check specific status
+      - `buildQueryString(params)` - Build URL query string
+      - `mergeHeaders(...headers)` - Merge multiple header objects
+      - `getHeader(response, name)` - Get header (case-insensitive)
+      - `isJson(response)` - Check JSON content type
+      - `correlationId()` - Generate request tracking ID
+      - `Headers` - Preset header constants (JSON, FORM, etc.)
+  
+  - **ValidationHelper** (299 lines)
+    - HTTP response validators (existing)
+    - Format validators (13 new):
+      - `isValidPhone(phone)` - Phone number validation
+      - `isValidCreditCard(number)` - Luhn algorithm validation
+      - `isValidPostalCode(code, country)` - Multi-country postal codes
+      - `isValidIPAddress(ip)` - IPv4/IPv6 validation
+      - `isValidUUID(uuid)` - UUID format validation
+      - `matchesPattern(value, regex)` - Regex pattern matching
+      - `isLengthInRange(str, min, max)` - String length validation
+      - `isPositive(num)`, `isNegative(num)`, `isInteger(num)` - Number validators
+      - `isValidDate(date)` - Date validation
+      - `isValidJson(str)` - JSON string validation
+
+- **Load Testing Profiles**
+  - `smoke.json` - Quick validation (1 VU, 30s)
+  - `load.json` - Sustained load with ramping VUs
+  - `stress.json` - Breaking point test
+  - `spike.json` - Sudden traffic spike simulation
+
+- **Redis Standalone Data Loader**
+  - `scripts/load-redis-data.js` - Pre-load CSV/JSON data into Redis
+  - `scripts/clean-redis-data.js` - Clean up Redis test data
+  - `scripts/copy-assets.js` - Copy CSV/JSON files to dist during build
+  - NPM scripts: `npm run redis:load`, `npm run redis:clean`
+  - Fixes k6 async setup() limitation
+
+- **Test Scenarios**
+  - `test-helpers.ts` - Comprehensive test for all helpers (100% passing)
+  - Redis diagnostic tests (simple, diagnostic, manual, debug, ultra-simple)
+
+- **Project Management**
+  - `TASKS.md` - Project task tracking in markdown format
+
+### Fixed
+- **RedisHelper.hgetall()** - Now correctly handles k6 Redis client object response
+  - Previously checked for array, k6 returns object directly
+  - Fixes 0% check rate issue in redis-data-loader tests
+- **ValidationHelper.isValidUrl()** - Changed from URL constructor to regex
+  - k6 doesn't support URL constructor
+  - Now uses regex pattern for validation
+
+### Changed
+- **Refactored test scenarios** to use DataHelper
+  - `auth-flow.ts` - Uses DataHelper for user generation
+  - `mixed-test.ts` - Uses DataHelper for test data
+  - `redis-test.ts` - Uses DataHelper integration
+  - `redis-data-loader.ts` - Updated to use pre-loaded data approach
+
+### Testing
+- **100% test coverage** for all helpers
+  - 34/34 checks passing in test-helpers.ts
+  - DataHelper: 14/14 checks ✅
+  - ValidationHelper: 10/10 checks ✅
+  - DateHelper: 10/10 checks ✅
+
 ## [Unreleased]
 
 ### Planned

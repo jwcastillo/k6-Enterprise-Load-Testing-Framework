@@ -1,0 +1,413 @@
+#!/usr/bin/env node
+
+/**
+ * report.js - Generate HTML test reports from k6 JSON output
+ * 
+ * Usage:
+ *   k6 run --out json=output.json test.js
+ *   node bin/report.js --input=output.json --output=report.html
+ * 
+ * Or pipe k6 output directly:
+ *   k6 run --out json=- test.js | node bin/report.js --output=report.html
+ */
+
+import fs from 'fs-extra';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Parse command line arguments
+const args = process.argv.slice(2);
+const options = {};
+
+args.forEach(arg => {
+  const [key, value] = arg.split('=');
+  options[key.replace('--', '')] = value;
+});
+
+const { input, output = 'report.html' } = options;
+
+if (!input && process.stdin.isTTY) {
+  console.error('Usage: node bin/report.js --input=<json-file> --output=<html-file>');
+  console.error('   or: k6 run --out json=- test.js | node bin/report.js --output=report.html');
+  console.error('');
+  console.error('Options:');
+  console.error('  --input   Input JSON file from k6 (optional if piping)');
+  console.error('  --output  Output HTML file (default: report.html)');
+  process.exit(1);
+}
+
+/**
+ * Parse k6 JSON output and aggregate metrics
+ */
+function parseK6Output(jsonLines) {
+  const metrics = {};
+  const checks = {};
+  let testInfo = {
+    startTime: null,
+    endTime: null,
+    duration: 0
+  };
+
+  jsonLines.forEach(line => {
+    try {
+      const data = JSON.parse(line);
+      
+      if (data.type === 'Metric') {
+        const { metric, data: metricData } = data;
+        
+        if (!metrics[metric]) {
+          metrics[metric] = {
+            type: metricData.type,
+            values: [],
+            tags: metricData.tags || {}
+          };
+        }
+        
+        metrics[metric].values.push(metricData.value);
+      }
+      
+      if (data.type === 'Point') {
+        const { metric, data: pointData } = data;
+        
+        if (metric === 'checks') {
+          const checkName = pointData.tags?.check || 'unknown';
+          if (!checks[checkName]) {
+            checks[checkName] = { passed: 0, failed: 0 };
+          }
+          if (pointData.value === 1) {
+            checks[checkName].passed++;
+          } else {
+            checks[checkName].failed++;
+          }
+        }
+        
+        // Track test duration
+        if (!testInfo.startTime) {
+          testInfo.startTime = pointData.time;
+        }
+        testInfo.endTime = pointData.time;
+      }
+    } catch (e) {
+      // Skip invalid JSON lines
+    }
+  });
+
+  if (testInfo.startTime && testInfo.endTime) {
+    testInfo.duration = new Date(testInfo.endTime) - new Date(testInfo.startTime);
+  }
+
+  return { metrics, checks, testInfo };
+}
+
+/**
+ * Calculate statistics from metric values
+ */
+function calculateStats(values) {
+  if (values.length === 0) return null;
+  
+  const sorted = [...values].sort((a, b) => a - b);
+  const sum = values.reduce((a, b) => a + b, 0);
+  
+  return {
+    min: sorted[0],
+    max: sorted[sorted.length - 1],
+    avg: sum / values.length,
+    median: sorted[Math.floor(sorted.length / 2)],
+    p90: sorted[Math.floor(sorted.length * 0.9)],
+    p95: sorted[Math.floor(sorted.length * 0.95)],
+    p99: sorted[Math.floor(sorted.length * 0.99)]
+  };
+}
+
+/**
+ * Generate HTML report
+ */
+function generateHTML(metrics, checks, testInfo) {
+  const checkStats = Object.entries(checks).map(([name, data]) => ({
+    name,
+    passed: data.passed,
+    failed: data.failed,
+    total: data.passed + data.failed,
+    rate: ((data.passed / (data.passed + data.failed)) * 100).toFixed(2)
+  }));
+
+  const totalChecks = checkStats.reduce((sum, c) => sum + c.total, 0);
+  const passedChecks = checkStats.reduce((sum, c) => sum + c.passed, 0);
+  const overallRate = totalChecks > 0 ? ((passedChecks / totalChecks) * 100).toFixed(2) : 0;
+
+  const metricStats = Object.entries(metrics)
+    .filter(([name]) => !name.startsWith('data_'))
+    .map(([name, data]) => ({
+      name,
+      stats: calculateStats(data.values),
+      type: data.type
+    }))
+    .filter(m => m.stats);
+
+  const duration = testInfo.duration ? (testInfo.duration / 1000).toFixed(2) : 'N/A';
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>k6 Test Report</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 20px;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 40px;
+      text-align: center;
+    }
+    .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+    .header p { opacity: 0.9; font-size: 1.1em; }
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      padding: 40px;
+      background: #f8f9fa;
+    }
+    .stat-card {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .stat-card h3 {
+      color: #666;
+      font-size: 0.9em;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+    }
+    .stat-card .value {
+      font-size: 2em;
+      font-weight: bold;
+      color: #667eea;
+    }
+    .stat-card.success .value { color: #10b981; }
+    .stat-card.warning .value { color: #f59e0b; }
+    .stat-card.danger .value { color: #ef4444; }
+    .section {
+      padding: 40px;
+    }
+    .section h2 {
+      font-size: 1.8em;
+      margin-bottom: 20px;
+      color: #333;
+      border-bottom: 3px solid #667eea;
+      padding-bottom: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    th {
+      background: #f8f9fa;
+      font-weight: 600;
+      color: #666;
+      text-transform: uppercase;
+      font-size: 0.85em;
+      letter-spacing: 0.5px;
+    }
+    tr:hover { background: #f8f9fa; }
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 0.85em;
+      font-weight: 600;
+    }
+    .badge.success { background: #d1fae5; color: #065f46; }
+    .badge.danger { background: #fee2e2; color: #991b1b; }
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: #e5e7eb;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #10b981, #059669);
+      transition: width 0.3s ease;
+    }
+    .footer {
+      text-align: center;
+      padding: 20px;
+      color: #666;
+      font-size: 0.9em;
+      background: #f8f9fa;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🚀 k6 Test Report</h1>
+      <p>Generated on ${new Date().toLocaleString()}</p>
+    </div>
+
+    <div class="summary">
+      <div class="stat-card ${overallRate >= 90 ? 'success' : overallRate >= 70 ? 'warning' : 'danger'}">
+        <h3>Check Success Rate</h3>
+        <div class="value">${overallRate}%</div>
+      </div>
+      <div class="stat-card">
+        <h3>Total Checks</h3>
+        <div class="value">${totalChecks}</div>
+      </div>
+      <div class="stat-card success">
+        <h3>Passed</h3>
+        <div class="value">${passedChecks}</div>
+      </div>
+      <div class="stat-card ${totalChecks - passedChecks > 0 ? 'danger' : ''}">
+        <h3>Failed</h3>
+        <div class="value">${totalChecks - passedChecks}</div>
+      </div>
+      <div class="stat-card">
+        <h3>Duration</h3>
+        <div class="value">${duration}s</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>📊 Check Results</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Check Name</th>
+            <th>Status</th>
+            <th>Passed</th>
+            <th>Failed</th>
+            <th>Total</th>
+            <th>Success Rate</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${checkStats.map(check => `
+            <tr>
+              <td><strong>${check.name}</strong></td>
+              <td>
+                <span class="badge ${check.failed === 0 ? 'success' : 'danger'}">
+                  ${check.failed === 0 ? '✓ PASS' : '✗ FAIL'}
+                </span>
+              </td>
+              <td>${check.passed}</td>
+              <td>${check.failed}</td>
+              <td>${check.total}</td>
+              <td>
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: ${check.rate}%"></div>
+                </div>
+                ${check.rate}%
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <h2>📈 Performance Metrics</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Metric</th>
+            <th>Min</th>
+            <th>Avg</th>
+            <th>Median</th>
+            <th>P90</th>
+            <th>P95</th>
+            <th>Max</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${metricStats.map(metric => `
+            <tr>
+              <td><strong>${metric.name}</strong></td>
+              <td>${metric.stats.min.toFixed(2)}</td>
+              <td>${metric.stats.avg.toFixed(2)}</td>
+              <td>${metric.stats.median.toFixed(2)}</td>
+              <td>${metric.stats.p90.toFixed(2)}</td>
+              <td>${metric.stats.p95.toFixed(2)}</td>
+              <td>${metric.stats.max.toFixed(2)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="footer">
+      Generated by k6 Enterprise Framework Report Generator
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
+// Main execution
+async function main() {
+  let jsonData = '';
+
+  if (input) {
+    // Read from file
+    console.log(`Reading k6 output from: ${input}`);
+    jsonData = await fs.readFile(input, 'utf-8');
+  } else {
+    // Read from stdin
+    console.log('Reading k6 output from stdin...');
+    const chunks = [];
+    for await (const chunk of process.stdin) {
+      chunks.push(chunk);
+    }
+    jsonData = Buffer.concat(chunks).toString('utf-8');
+  }
+
+  const lines = jsonData.trim().split('\n').filter(line => line.trim());
+  console.log(`Parsing ${lines.length} JSON lines...`);
+
+  const { metrics, checks, testInfo } = parseK6Output(lines);
+  
+  console.log(`Found ${Object.keys(metrics).length} metrics`);
+  console.log(`Found ${Object.keys(checks).length} checks`);
+
+  const html = generateHTML(metrics, checks, testInfo);
+  
+  const outputPath = path.resolve(output);
+  await fs.writeFile(outputPath, html);
+  
+  console.log(`✅ Report generated: ${outputPath}`);
+  console.log(`📊 Open in browser: file://${outputPath}`);
+}
+
+main().catch(err => {
+  console.error('❌ Error generating report:', err);
+  process.exit(1);
+});

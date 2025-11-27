@@ -2,6 +2,7 @@ import { check, sleep } from 'k6';
 import { ConfigLoader } from '../../../core/config.js';
 import { AuthService } from '../lib/auth-service.js';
 import { DataHelper } from '../../../shared/helpers/DataHelper.js';
+import { ValidationHelper } from '../../../shared/helpers/ValidationHelper.js';
 
 const config = new ConfigLoader().load();
 const authService = new AuthService(config.baseUrl);
@@ -31,11 +32,8 @@ export default function () {
 
   const registerRes = authService.register(username, email, password);
   const registerSuccess = check(registerRes, {
-    'registration successful': (r) => r.status === 201,
-    'registration response has id': (r) => {
-      if (!r.body) return false;
-      return JSON.parse(r.body as string).id !== undefined;
-    }
+    'registration successful': (r) => ValidationHelper.hasStatus(r, 201),
+    'registration response has id': (r) => ValidationHelper.hasJsonStructure(r, ['id'])
   });
 
   sleep(1);
@@ -44,11 +42,8 @@ export default function () {
   if (registerSuccess) {
     const loginRes = authService.login(username, password);
     const loginCheck = check(loginRes, {
-      'login successful': (r) => r.status === 200,
-      'login returns token': (r) => {
-        if (!r.body) return false;
-        return JSON.parse(r.body as string).auth_token !== undefined;
-      }
+      'login successful': (r) => ValidationHelper.hasStatus(r, 200),
+      'login returns token': (r) => ValidationHelper.hasJsonStructure(r, ['auth_token'])
     });
 
     if (loginCheck && loginRes.body) {
@@ -62,7 +57,7 @@ export default function () {
     if (authToken) {
       const logoutRes = authService.logout(authToken);
       check(logoutRes, {
-        'logout successful': (r) => r.status === 204
+        'logout successful': (r) => ValidationHelper.hasStatus(r, 204)
       });
       
       console.log(`User ${username} completed full auth flow`);

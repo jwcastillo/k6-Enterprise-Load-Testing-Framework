@@ -1,6 +1,7 @@
 import { check, sleep } from 'k6';
 import { ConfigLoader } from '../../../core/config.js';
 import { ExampleService } from '../lib/example-service.js';
+import { ValidationHelper } from '../../../shared/helpers/ValidationHelper.js';
 
 const config = new ConfigLoader().load();
 const service = new ExampleService(config.baseUrl);
@@ -19,8 +20,8 @@ export const options = {
 export default function () {
   const res = service.getHomepage();
   check(res, { 
-    'status was 200': (r) => r.status == 200,
-    'response time < 500ms': (r) => r.timings.duration < 500
+    'status was 200': (r) => ValidationHelper.hasStatus(r, 200),
+    'response time < 500ms': (r) => ValidationHelper.isResponseTimeLessThan(r, 500)
   });
   sleep(1);
 }

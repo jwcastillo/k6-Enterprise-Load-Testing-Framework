@@ -3,6 +3,7 @@ import { check, sleep } from 'k6';
 import { ConfigLoader } from '../../../core/config.js';
 import { AuthService } from '../lib/auth-service.js';
 import { DataHelper } from '../../../shared/helpers/DataHelper.js';
+import { ValidationHelper } from '../../../shared/helpers/ValidationHelper.js';
 
 const config = new ConfigLoader().load();
 const authService = new AuthService(config.baseUrl);
@@ -36,7 +37,7 @@ export default async function () {
   console.log(`Creating user ${username} via API...`);
   const registerRes = authService.register(username, email, password);
   const apiCheck = check(registerRes, {
-    'API: user created': (r) => r.status === 201,
+    'API: user created': (r) => ValidationHelper.hasStatus(r, 201),
   });
 
   if (!apiCheck) {

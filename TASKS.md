@@ -133,3 +133,54 @@
 3. Update REDIS.md with new data loader workflow
 4. Create CHANGELOG.md
 5. Tag version 1.1.0
+
+---
+
+## Version 1.2.0 - Future Roadmap 🚀
+
+### 1. Documentación 📚
+- [ ] Actualizar README.md con v1.1.0 features
+- [ ] Agregar ejemplos de uso de helpers en TEST_TYPES.md
+- [ ] Documentar workflow de Redis data loader en REDIS.md
+- [ ] Crear guía de contribución (CONTRIBUTING.md)
+- [ ] Agregar badges al README (coverage, build status)
+
+### 2. CI/CD 🔄
+- [ ] GitHub Actions / GitLab CI pipeline
+- [ ] Automated testing en CI
+- [ ] Automated report generation
+- [ ] Docker image publishing
+- [ ] Automated versioning
+
+### 3. Monitoreo y Observabilidad 📊
+- [ ] Integración con InfluxDB
+- [ ] Integración con Grafana dashboards
+- [ ] Alerting basado en thresholds
+- [ ] Slack/Discord notifications
+- [ ] Trend analysis entre runs
+
+### 4. Testing Avanzado 🧪
+- [ ] Más escenarios de ejemplo
+- [ ] Performance benchmarks
+- [ ] Chaos testing scenarios
+- [ ] API contract testing
+- [ ] GraphQL testing support
+
+### 5. Utilidades Adicionales 🛠️
+- [ ] Mock server integration
+- [ ] Test data factories avanzados
+- [ ] Parallel test execution
+- [ ] Test result comparison tool
+- [ ] Performance regression detection
+
+### 6. Developer Experience 💻
+- [ ] VS Code extension/snippets
+- [ ] Test generator CLI
+- [ ] Interactive test builder
+- [ ] Better error messages
+- [ ] Debug mode mejorado
+
+### 🎯 Recomendaciones Inmediatas
+1. **Actualizar Documentación** (Más impacto, menos esfuerzo)
+2. **CI/CD Básico** (Alta prioridad)
+3. **Más Escenarios de Ejemplo** (Valor educativo)

@@ -239,3 +239,83 @@ K6_BROWSER_ENABLED=true node dist/core/cli.js --client=client-a --env=default --
 - ✅ Tests E2E de features críticas
 - ✅ Validación pre-release
 - ✅ Smoke tests comprehensivos
+
+---
+
+## 5. 🛠️ Uso de Helpers
+
+El framework incluye helpers potentes para simplificar la escritura de tests.
+
+### DataHelper (Generación de Datos)
+```typescript
+import { DataHelper } from '../../../shared/helpers/DataHelper.js';
+
+// Generar usuario completo
+const user = DataHelper.randomUser();
+console.log(user.email, user.name.full);
+
+// Generar datos específicos
+const product = {
+  name: DataHelper.randomProduct(),
+  price: DataHelper.randomPrice(10, 100),
+  sku: DataHelper.randomString(8).toUpperCase()
+};
+
+// Generar tarjeta de crédito válida (Luhn)
+const creditCard = DataHelper.randomCreditCard();
+```
+
+### ValidationHelper (Validaciones Robustas)
+```typescript
+import { ValidationHelper } from '../../../shared/helpers/ValidationHelper.js';
+import { check } from 'k6';
+
+const res = http.get(url);
+
+check(res, {
+  // Validar status
+  'status is 200': (r) => ValidationHelper.hasStatus(r, 200),
+  
+  // Validar estructura JSON
+  'has user id': (r) => ValidationHelper.hasJsonStructure(r, ['id', 'email']),
+  
+  // Validar tiempo de respuesta
+  'fast response': (r) => ValidationHelper.isResponseTimeLessThan(r, 500),
+  
+  // Validar contenido
+  'valid email': (r) => ValidationHelper.isValidEmail(r.json('email')),
+  'valid uuid': (r) => ValidationHelper.isValidUUID(r.json('id'))
+});
+```
+
+### RequestHelper (Construcción de Requests)
+```typescript
+import { RequestHelper } from '../../../shared/helpers/RequestHelper.js';
+
+// Headers de autenticación
+const headers = RequestHelper.buildAuthHeaders(token, 'Bearer');
+
+// Construir query string
+const query = RequestHelper.buildQueryString({
+  page: 1,
+  limit: 10,
+  sort: 'desc'
+});
+
+// Extraer valor seguro de JSON
+const userId = RequestHelper.extractValue(res, 'data.users[0].id');
+```
+
+### DateHelper (Manejo de Fechas)
+```typescript
+import { DateHelper } from '../../../shared/helpers/DateHelper.js';
+
+// Fecha futura para expiración
+const expiryDate = DateHelper.addDays(new Date(), 30);
+
+// Formato ISO
+const isoString = DateHelper.toISOString(expiryDate);
+
+// Verificar si una fecha es pasada
+const isExpired = DateHelper.isPast(expiryDate);
+```

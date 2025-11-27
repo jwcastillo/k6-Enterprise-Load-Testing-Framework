@@ -139,11 +139,11 @@
 ## Version 1.2.0 - Future Roadmap 🚀
 
 ### 1. Documentación 📚
-- [ ] Actualizar README.md con v1.1.0 features
-- [ ] Agregar ejemplos de uso de helpers en TEST_TYPES.md
-- [ ] Documentar workflow de Redis data loader en REDIS.md
-- [ ] Crear guía de contribución (CONTRIBUTING.md)
-- [ ] Agregar badges al README (coverage, build status)
+- [x] Actualizar README.md con v1.1.0 features
+- [x] Agregar ejemplos de uso de helpers en TEST_TYPES.md
+- [x] Documentar workflow de Redis data loader en REDIS.md
+- [x] Crear guía de contribución (CONTRIBUTING.md)
+- [x] Agregar badges al README (coverage, build status)
 
 ### 2. CI/CD 🔄
 - [ ] GitHub Actions / GitLab CI pipeline
@@ -153,7 +153,7 @@
 - [ ] Automated versioning
 
 ### 3. Monitoreo y Observabilidad 📊
-- [ ] Integración con InfluxDB
+- [ ] Integración con Prometheus
 - [ ] Integración con Grafana dashboards
 - [ ] Alerting basado en thresholds
 - [ ] Slack/Discord notifications

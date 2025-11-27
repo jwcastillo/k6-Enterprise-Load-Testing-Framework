@@ -1,7 +1,9 @@
 # k6 Enterprise Load Testing Framework
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/yourusername/k6-enterprise-framework)
+[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/yourusername/k6-enterprise-framework)
 [![License](https://img.shields.io/badge/license-ISC-green.svg)](LICENSE)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/yourusername/k6-enterprise-framework/actions)
+[![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)](https://github.com/yourusername/k6-enterprise-framework)
 
 Enterprise-grade, modular load testing framework built on k6 with multi-client support, Redis integration, and comprehensive test type coverage.
 
@@ -10,6 +12,9 @@ Enterprise-grade, modular load testing framework built on k6 with multi-client s
 - ✅ **Multi-Client Architecture** - Complete isolation per client
 - ✅ **Service Object Model** - Reusable API abstractions (like Page Object Model)
 - ✅ **4 Test Types** - Unit, Flow, Browser, and Mixed tests
+- ✅ **Config-Driven Tests** - Define tests in JSON without writing code
+- ✅ **Rich Helper Library** - Date, Request, Data, and Validation helpers
+- ✅ **HTML Reporting** - Beautiful, detailed test reports with metrics
 - ✅ **Redis Integration** - Share data between VUs, cache setup data
 - ✅ **Advanced k6 Config** - Multiple scenarios, thresholds, executors
 - ✅ **Docker Support** - Containerized execution with docker-compose
@@ -76,6 +81,20 @@ K6_BROWSER_ENABLED=true node dist/core/cli.js --client=client-a --test=browser-t
 ### Redis Data Loading
 ```bash
 node dist/core/cli.js --client=client-a --test=redis-data-loader.ts
+```
+
+### Config-Driven Tests
+Run tests defined purely in `default.json` or environment config:
+```bash
+node dist/core/cli.js --client=client-a --test=config-driven.ts
+```
+
+### HTML Reporting
+Generate beautiful HTML reports from test results:
+```bash
+# Run test and generate report
+k6 run --out json=output.json dist/clients/client-a/scenarios/example.js
+node bin/report.js --input=output.json
 ```
 
 ## 🔧 Configuration

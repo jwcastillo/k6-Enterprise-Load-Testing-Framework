@@ -266,6 +266,44 @@ Ver `clients/client-a/scenarios/redis-data-loader.ts` para un ejemplo completo q
 node dist/core/cli.js --client=client-a --test=redis-data-loader.ts
 ```
 
+## Scripts de Utilidad (Standalone)
+
+El framework incluye scripts independientes de Node.js para gestionar datos de Redis sin ejecutar k6.
+
+### Cargar Datos (`scripts/load-redis-data.js`)
+Carga datos masivos desde archivos CSV/JSON a Redis.
+
+```bash
+# Uso básico (usa REDIS_URL del .env)
+node scripts/load-redis-data.js
+
+# Opciones personalizadas
+node scripts/load-redis-data.js --users=./data/users.csv --products=./data/products.json --clear
+```
+
+**Opciones:**
+- `--users`: Ruta al archivo CSV de usuarios
+- `--products`: Ruta al archivo JSON de productos
+- `--clear`: Limpiar datos existentes antes de cargar
+- `--redis`: URL de conexión a Redis (opcional)
+
+### Limpiar Datos (`scripts/clean-redis-data.js`)
+Elimina todas las keys creadas por el framework (prefijos `user:`, `product:`, `config:`, `stats:`).
+
+```bash
+# Limpiar todo
+node scripts/clean-redis-data.js
+
+# Limpiar patrón específico
+node scripts/clean-redis-data.js --pattern="user:*"
+```
+
+**Workflow Recomendado:**
+1. Generar datos: `node bin/generate-data.js`
+2. Cargar en Redis: `node scripts/load-redis-data.js`
+3. Ejecutar Test k6: `node dist/core/cli.js ...`
+4. Limpiar (opcional): `node scripts/clean-redis-data.js`
+
 ## Ejecutar Tests con Redis
 
 ### Local

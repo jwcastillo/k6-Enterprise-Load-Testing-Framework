@@ -343,6 +343,14 @@ function generateHTML(metrics, checks, testInfo) {
         <h3>TTFB P90</h3>
         <div class="value">${calculateStats(metrics.http_req_waiting.values).p90.toFixed(2)}ms</div>
       </div>
+      <div class="stat-card">
+        <h3>TTFB P95</h3>
+        <div class="value">${calculateStats(metrics.http_req_waiting.values).p95.toFixed(2)}ms</div>
+      </div>
+      <div class="stat-card">
+        <h3>TTFB P99</h3>
+        <div class="value">${calculateStats(metrics.http_req_waiting.values).p99.toFixed(2)}ms</div>
+      </div>
       ` : ''}
       ${metrics.http_reqs ? `
       <div class="stat-card">

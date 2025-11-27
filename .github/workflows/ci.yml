@@ -5,6 +5,24 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      client:
+        description: "Client to test"
+        required: true
+        default: "client-a"
+      env:
+        description: "Environment (default, staging, prod)"
+        required: true
+        default: "default"
+      test:
+        description: "Test file to run"
+        required: true
+        default: "example.ts"
+      profile:
+        description: "Load profile"
+        required: false
+        default: "smoke"
 
 jobs:
   build:
@@ -56,8 +74,12 @@ jobs:
       - name: Setup k6
         uses: grafana/setup-k6-action@v1
 
-      - name: Run Helper Unit Tests
-        run: node dist/core/cli.js --client=client-a --test=test-helpers.ts
+      - name: Run Test
+        run: |
+          CLIENT=${{ github.event.inputs.client || 'client-a' }}
+          ENV=${{ github.event.inputs.env || 'default' }}
+          TEST=${{ github.event.inputs.test || 'example.ts' }}
+          PROFILE=${{ github.event.inputs.profile || 'smoke' }}
 
-      - name: Run Smoke Test
-        run: node dist/core/cli.js --client=client-a --test=example.ts --profile=smoke
+          echo "Running test with: Client=$CLIENT, Env=$ENV, Test=$TEST, Profile=$PROFILE"
+          node dist/core/cli.js --client=$CLIENT --env=$ENV --test=$TEST --profile=$PROFILE

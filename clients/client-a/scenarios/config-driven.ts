@@ -6,8 +6,8 @@ import { RequestHelper } from '../../../shared/helpers/RequestHelper.js';
 // Load configuration
 const config = new ConfigLoader().load();
 
-export const options = config.scenarios ||{
-  scenarios: {
+export const options = {
+  scenarios: config.scenarios ||{
     config_tests: {
       executor: 'shared-iterations',
       vus: 1,

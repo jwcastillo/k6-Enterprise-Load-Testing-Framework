@@ -29,7 +29,7 @@ export default async function () {
 
   try {
     // Navigate to the homepage
-    await page.goto(config.baseUrl || 'https://test.k6.io');
+    await page.goto(config.baseUrl);
     
     check(page, {
       'page loaded': () => page.url() !== '',

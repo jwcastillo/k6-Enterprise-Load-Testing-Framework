@@ -146,8 +146,8 @@
 - [x] Agregar badges al README (coverage, build status)
 
 ### 2. CI/CD 🔄
-- [ ] GitHub Actions / GitLab CI pipeline
-- [ ] Automated testing en CI
+- [x] GitHub Actions / GitLab CI pipeline
+- [x] Automated testing en CI
 - [ ] Automated report generation
 - [ ] Docker image publishing
 - [ ] Automated versioning

@@ -103,29 +103,29 @@ The framework will act as a Quality Gateway, returning exit code 1 if thresholds
 
 ### GitHub Actions
 
-#### Ejecución Manual desde la UI
-1. Ve a la pestaña **Actions** en tu repositorio de GitHub
-2. Selecciona el workflow **CI** en el panel izquierdo
-3. Haz clic en **Run workflow** (botón en la parte superior derecha)
-4. Completa los parámetros:
+#### Manual Execution from UI
+1. Go to the **Actions** tab in your GitHub repository
+2. Select the **Run k6 Tests** workflow in the left panel
+3. Click **Run workflow** (button in the top right)
+4. Fill in the parameters:
    - **Client**: `local`, `client-a`, etc.
    - **Environment**: `default`, `staging`, `prod`
    - **Test**: `example.ts`, `auth-flow.ts`, etc.
-   - **Profile**: `smoke`, `load`, `stress` (opcional)
-5. Haz clic en **Run workflow**
+   - **Profile**: `smoke`, `load`, `stress` (optional)
+5. Click **Run workflow**
 
-#### Ejecución via API/curl
+#### Execution via API/curl
 ```bash
-# Generar un Personal Access Token en GitHub:
+# Generate a Personal Access Token in GitHub:
 # Settings → Developer settings → Personal access tokens → Generate new token
-# Permisos necesarios: repo, workflow
+# Required permissions: repo, workflow
 
-# Ejecutar workflow con parámetros
+# Execute workflow with parameters
 curl -X POST \
   -H "Accept: application/vnd.github+json" \
   -H "Authorization: Bearer YOUR_GITHUB_TOKEN" \
   -H "X-GitHub-Api-Version: 2022-11-28" \
-  https://api.github.com/repos/OWNER/REPO/actions/workflows/ci.yml/dispatches \
+  https://api.github.com/repos/OWNER/REPO/actions/workflows/run-tests.yml/dispatches \
   -d '{
     "ref": "main",
     "inputs": {
@@ -137,7 +137,7 @@ curl -X POST \
   }'
 ```
 
-#### Ejecución desde otro Workflow
+#### Execution from Another Workflow
 ```yaml
 name: Trigger Tests
 
@@ -156,7 +156,7 @@ jobs:
             await github.rest.actions.createWorkflowDispatch({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              workflow_id: 'ci.yml',
+              workflow_id: 'run-tests.yml',
               ref: 'main',
               inputs: {
                 client: 'local',
@@ -169,24 +169,24 @@ jobs:
 
 ### GitLab CI
 
-#### Ejecución Manual desde la UI
-1. Ve a **CI/CD → Pipelines** en tu proyecto de GitLab
-2. Haz clic en **Run pipeline** (botón en la parte superior derecha)
-3. Selecciona la rama (ej: `main`)
-4. Agrega variables:
+#### Manual Execution from UI
+1. Go to **CI/CD → Pipelines** in your GitLab project
+2. Click **Run pipeline** (button in the top right)
+3. Select the branch (e.g., `main`)
+4. Add variables:
    - `CLIENT`: `local`
    - `ENV`: `staging`
    - `TEST`: `auth-flow.ts`
    - `PROFILE`: `load`
-5. Haz clic en **Run pipeline**
+5. Click **Run pipeline**
 
-#### Ejecución via API/curl
+#### Execution via API/curl
 ```bash
-# Generar un Personal Access Token en GitLab:
+# Generate a Personal Access Token in GitLab:
 # Settings → Access Tokens → Add new token
-# Scopes necesarios: api, read_api, write_repository
+# Required scopes: api, read_api, write_repository
 
-# Ejecutar pipeline con variables
+# Execute pipeline with variables
 curl -X POST \
   -H "PRIVATE-TOKEN: YOUR_GITLAB_TOKEN" \
   "https://gitlab.com/api/v4/projects/PROJECT_ID/pipeline" \
@@ -197,7 +197,7 @@ curl -X POST \
   -d "variables[PROFILE]=load"
 ```
 
-#### Ejecución desde otro Pipeline
+#### Execution from Another Pipeline
 ```yaml
 trigger_tests:
   stage: test
@@ -215,18 +215,18 @@ trigger_tests:
     - schedules
 ```
 
-### Parámetros Disponibles
+### Available Parameters
 
-| Parámetro | Descripción | Valores de Ejemplo | Requerido |
-|-----------|-------------|-------------------|-----------|
-| `client` | Cliente a probar | `local`, `client-a`, `production` | ✅ Sí |
-| `env` | Entorno de ejecución | `default`, `staging`, `prod` | ✅ Sí |
-| `test` | Archivo de test a ejecutar | `example.ts`, `auth-flow.ts`, `load-test.ts` | ✅ Sí |
-| `profile` | Perfil de carga | `smoke`, `load`, `stress`, `spike` | ❌ No (default: smoke) |
+| Parameter | Description | Example Values | Required |
+|-----------|-------------|----------------|----------|
+| `client` | Client to test | `local`, `client-a`, `production` | ✅ Yes |
+| `env` | Execution environment | `default`, `staging`, `prod` | ✅ Yes |
+| `test` | Test file to execute | `example.ts`, `auth-flow.ts`, `load-test.ts` | ✅ Yes |
+| `profile` | Load profile | `smoke`, `load`, `stress`, `spike` | ❌ No (default: smoke) |
 
-### Ejemplos de Uso Común
+### Common Usage Examples
 
-#### Smoke Test Diario (Scheduled)
+#### Daily Smoke Test (Scheduled)
 ```yaml
 # GitHub Actions (.github/workflows/scheduled-smoke.yml)
 name: Daily Smoke Tests

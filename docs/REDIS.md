@@ -2,60 +2,60 @@
 
 ## Overview
 
-El framework incluye soporte completo para Redis, permitiendo compartir datos entre VUs (Virtual Users) y coordinar la ejecución de tests.
+The framework includes complete Redis support, allowing you to share data between VUs (Virtual Users) and coordinate test execution.
 
-## Casos de Uso
+## Use Cases
 
-### 1. 🔄 Compartir Datos entre VUs
-- Tokens de autenticación
-- IDs de recursos creados
-- Contadores compartidos
+### 1. 🔄 Share Data Between VUs
+- Authentication tokens
+- Created resource IDs
+- Shared counters
 
-### 2. 📦 Cachear Datos de Setup
-- Usuarios de prueba pre-creados
-- Datos de configuración
-- Catálogos de productos
+### 2. 📦 Cache Setup Data
+- Pre-created test users
+- Configuration data
+- Product catalogs
 
-### 3. 📊 Coordinar Ejecución
-- Sincronización entre VUs
-- Rate limiting distribuido
-- Estadísticas en tiempo real
+### 3. 📊 Coordinate Execution
+- Synchronization between VUs
+- Distributed rate limiting
+- Real-time statistics
 
-## Instalación
+## Installation
 
 ### Local
 ```bash
-# Instalar Redis
+# Install Redis
 brew install redis  # macOS
-# o
+# or
 apt-get install redis  # Ubuntu
 
-# Iniciar Redis
+# Start Redis
 redis-server
 ```
 
 ### Docker
-Redis ya está incluido en `docker-compose.yml`:
+Redis is already included in `docker-compose.yml`:
 ```bash
 docker-compose up redis
 ```
 
 ## RedisHelper API
 
-### Conexión
+### Connection
 ```typescript
 import { RedisHelper } from '../../../shared/redis-helper.js';
 
-const redis = new RedisHelper(); // Usa REDIS_URL del env
-// o
+const redis = new RedisHelper(); // Uses REDIS_URL from env
+// or
 const redis = new RedisHelper('redis://localhost:6379');
 ```
 
-### Operaciones Básicas
+### Basic Operations
 
 #### Set/Get
 ```typescript
-// Set con TTL opcional (en segundos)
+// Set with optional TTL (in seconds)
 await redis.set('key', 'value', 60);
 
 // Get
@@ -68,58 +68,58 @@ await redis.del('key');
 const exists = await redis.exists('key');
 ```
 
-### Operaciones Múltiples
+### Multiple Operations
 
 #### MSet/MGet
 ```typescript
-// Set múltiple
+// Multiple set
 await redis.mset({
   'user:1:name': 'John',
   'user:1:email': 'john@test.com'
 });
 
-// Get múltiple
+// Multiple get
 const values = await redis.mget(['user:1:name', 'user:1:email']);
 ```
 
-### Contadores
+### Counters
 
 ```typescript
-// Incrementar
+// Increment
 const count = await redis.incr('login_count');
 ```
 
-### Listas
+### Lists
 
 ```typescript
-// Agregar a lista
+// Add to list
 await redis.lpush('errors', 'Error message');
 
-// Obtener tamaño
+// Get size
 const length = await redis.llen('errors');
 
-// Obtener todos los items
+// Get all items
 const errors = await redis.lrange('errors', 0, -1);
 ```
 
 ### Hashes
 
 ```typescript
-// Set campo de hash
+// Set hash field
 await redis.hset('user:1', 'name', 'John');
 await redis.hset('user:1', 'email', 'john@test.com');
 
-// Get campo
+// Get field
 const name = await redis.hget('user:1', 'name');
 
-// Get todos los campos
+// Get all fields
 const user = await redis.hgetall('user:1');
 // { name: 'John', email: 'john@test.com' }
 ```
 
-## Ejemplo Completo
+## Complete Example
 
-Ver `clients/client-a/scenarios/redis-test.ts`:
+See `clients/client-a/scenarios/redis-test.ts`:
 
 ```typescript
 import { RedisHelper } from '../../../shared/redis-helper.js';
@@ -127,7 +127,7 @@ import { RedisHelper } from '../../../shared/redis-helper.js';
 const redis = new RedisHelper();
 
 export async function setupData() {
-  // Crear usuarios y guardar en Redis
+  // Create users and save in Redis
   for (let i = 0; i < 10; i++) {
     const user = createUser();
     await redis.hset(`user:${i}`, 'username', user.username);
@@ -137,22 +137,22 @@ export async function setupData() {
 }
 
 export async function loadTest() {
-  // Usar usuarios de Redis
+  // Use users from Redis
   const userIndex = Math.floor(Math.random() * 10);
   const userData = await redis.hgetall(`user:${userIndex}`);
   
-  // Login con usuario de Redis
+  // Login with Redis user
   const loginRes = authService.login(
     userData.username, 
     userData.password
   );
   
-  // Incrementar contador
+  // Increment counter
   await redis.incr('stats:successful_logins');
 }
 
 export async function teardown() {
-  // Limpiar datos
+  // Clean up data
   for (let i = 0; i < 10; i++) {
     await redis.del(`user:${i}`);
   }
@@ -160,9 +160,9 @@ export async function teardown() {
 }
 ```
 
-## Cargar Datos desde CSV y JSON
+## Load Data from CSV and JSON
 
-### Archivos de Ejemplo
+### Example Files
 
 **users.csv:**
 ```csv
@@ -190,7 +190,7 @@ jane_smith,jane@example.com,Pass456!,admin
 }
 ```
 
-### Cargar en Redis con SharedArray
+### Load into Redis with SharedArray
 
 ```typescript
 import { SharedArray } from 'k6/data';
@@ -198,7 +198,7 @@ import { RedisHelper } from '../../../shared/redis-helper.js';
 
 const redis = new RedisHelper();
 
-// Cargar CSV (parsing manual)
+// Load CSV (manual parsing)
 const csvData = new SharedArray('users', function () {
   const csvContent = open('../data/users.csv');
   const lines = csvContent.split('\n');
@@ -217,7 +217,7 @@ const csvData = new SharedArray('users', function () {
   return users;
 });
 
-// Cargar JSON
+// Load JSON
 const jsonData = new SharedArray('products', function () {
   const jsonFile = open('../data/products.json');
   const data = JSON.parse(jsonFile);
@@ -225,7 +225,7 @@ const jsonData = new SharedArray('products', function () {
 });
 
 export async function setupData() {
-  // Cargar usuarios desde CSV a Redis
+  // Load users from CSV to Redis
   for (let i = 0; i < csvData.length; i++) {
     const user = csvData[i];
     await redis.hset(`user:${i}`, 'username', user.username);
@@ -235,7 +235,7 @@ export async function setupData() {
   }
   await redis.set('user:count', csvData.length.toString(), 600);
 
-  // Cargar productos desde JSON a Redis
+  // Load products from JSON to Redis
   const data = jsonData[0];
   const products = data.products;
   
@@ -245,115 +245,115 @@ export async function setupData() {
     await redis.lpush('product:ids', product.id);
   }
 
-  // Cargar configuración
+  // Load configuration
   await redis.hset('config:store', 'tax_rate', data.config.tax_rate.toString());
   await redis.hset('config:store', 'shipping_cost', data.config.shipping_cost.toString());
 }
 ```
 
-### Ejemplo Completo
+### Complete Example
 
-Ver `clients/client-a/scenarios/redis-data-loader.ts` para un ejemplo completo que incluye:
-- ✅ Carga de usuarios desde CSV
-- ✅ Carga de productos desde JSON
-- ✅ Almacenamiento en Redis con hashes y listas
-- ✅ Uso de datos en load test
-- ✅ Estadísticas por categoría
-- ✅ Cleanup en teardown
+See `clients/client-a/scenarios/redis-data-loader.ts` for a complete example that includes:
+- ✅ Loading users from CSV
+- ✅ Loading products from JSON
+- ✅ Storage in Redis with hashes and lists
+- ✅ Using data in load test
+- ✅ Statistics by category
+- ✅ Cleanup in teardown
 
-**Ejecutar:**
+**Execute:**
 ```bash
 node dist/core/cli.js --client=client-a --test=redis-data-loader.ts
 ```
 
-## Scripts de Utilidad (Standalone)
+## Utility Scripts (Standalone)
 
-El framework incluye scripts independientes de Node.js para gestionar datos de Redis sin ejecutar k6.
+The framework includes standalone Node.js scripts to manage Redis data without running k6.
 
-### Cargar Datos (`scripts/load-redis-data.js`)
-Carga datos masivos desde archivos CSV/JSON a Redis.
+### Load Data (`scripts/load-redis-data.js`)
+Load bulk data from CSV/JSON files to Redis.
 
 ```bash
-# Uso básico (usa REDIS_URL del .env)
+# Basic usage (uses REDIS_URL from .env)
 node scripts/load-redis-data.js
 
-# Opciones personalizadas
+# Custom options
 node scripts/load-redis-data.js --users=./data/users.csv --products=./data/products.json --clear
 ```
 
-**Opciones:**
-- `--users`: Ruta al archivo CSV de usuarios
-- `--products`: Ruta al archivo JSON de productos
-- `--clear`: Limpiar datos existentes antes de cargar
-- `--redis`: URL de conexión a Redis (opcional)
+**Options:**
+- `--users`: Path to users CSV file
+- `--products`: Path to products JSON file
+- `--clear`: Clear existing data before loading
+- `--redis`: Redis connection URL (optional)
 
-### Limpiar Datos (`scripts/clean-redis-data.js`)
-Elimina todas las keys creadas por el framework (prefijos `user:`, `product:`, `config:`, `stats:`).
+### Clean Data (`scripts/clean-redis-data.js`)
+Delete all keys created by the framework (prefixes `user:`, `product:`, `config:`, `stats:`).
 
 ```bash
-# Limpiar todo
+# Clean all
 node scripts/clean-redis-data.js
 
-# Limpiar patrón específico
+# Clean specific pattern
 node scripts/clean-redis-data.js --pattern="user:*"
 ```
 
-**Workflow Recomendado:**
-1. Generar datos: `node bin/generate-data.js`
-2. Cargar en Redis: `node scripts/load-redis-data.js`
-3. Ejecutar Test k6: `node dist/core/cli.js ...`
-4. Limpiar (opcional): `node scripts/clean-redis-data.js`
+**Recommended Workflow:**
+1. Generate data: `node bin/generate-data.js`
+2. Load to Redis: `node scripts/load-redis-data.js`
+3. Run k6 Test: `node dist/core/cli.js ...`
+4. Clean (optional): `node scripts/clean-redis-data.js`
 
-## Ejecutar Tests con Redis
+## Run Tests with Redis
 
 ### Local
 ```bash
-# Asegurar que Redis está corriendo
-redis-cli ping  # Debe retornar "PONG"
+# Ensure Redis is running
+redis-cli ping  # Should return "PONG"
 
-# Ejecutar test
+# Run test
 node dist/core/cli.js --client=client-a --test=redis-test.ts
 ```
 
 ### Docker
 ```bash
-# Iniciar Redis y ejecutar test
+# Start Redis and run test
 docker-compose up
 
-# O específicamente
+# Or specifically
 CLIENT=client-a TEST=redis-test.ts docker-compose up
 ```
 
-## Patrones Comunes
+## Common Patterns
 
 ### 1. Setup/Load/Teardown
 ```typescript
 export async function setupData() {
-  // Crear datos de prueba en Redis
+  // Create test data in Redis
 }
 
 export default async function() {
-  // Usar datos de Redis
+  // Use data from Redis
 }
 
 export async function teardown() {
-  // Limpiar Redis
+  // Clean Redis
 }
 ```
 
-### 2. Pool de Usuarios
+### 2. User Pool
 ```typescript
-// Setup: Crear pool
+// Setup: Create pool
 for (let i = 0; i < 100; i++) {
   await redis.hset(`user:${i}`, 'token', generateToken());
 }
 
-// Test: Usar del pool
+// Test: Use from pool
 const userId = __VU % 100;
 const token = await redis.hget(`user:${userId}`, 'token');
 ```
 
-### 3. Rate Limiting Distribuido
+### 3. Distributed Rate Limiting
 ```typescript
 const key = `rate:${endpoint}:${minute}`;
 const count = await redis.incr(key);
@@ -365,35 +365,35 @@ if (count > MAX_REQUESTS_PER_MINUTE) {
 }
 ```
 
-### 4. Estadísticas en Tiempo Real
+### 4. Real-Time Statistics
 ```typescript
-// Incrementar contadores
+// Increment counters
 await redis.incr('stats:requests');
 await redis.incr('stats:errors');
 
-// Leer en teardown
+// Read in teardown
 const requests = await redis.get('stats:requests');
 const errors = await redis.get('stats:errors');
 console.log(`Error rate: ${(errors/requests)*100}%`);
 ```
 
-## Mejores Prácticas
+## Best Practices
 
-### ✅ Usar TTL
-Siempre establecer TTL para evitar datos huérfanos:
+### ✅ Use TTL
+Always set TTL to avoid orphaned data:
 ```typescript
-await redis.set('temp:data', value, 300); // 5 minutos
+await redis.set('temp:data', value, 300); // 5 minutes
 ```
 
 ### ✅ Namespacing
-Usar prefijos para organizar keys:
+Use prefixes to organize keys:
 ```typescript
 await redis.set('user:123:token', token);
 await redis.set('session:abc:data', data);
 ```
 
-### ✅ Cleanup en Teardown
-Siempre limpiar datos en teardown:
+### ✅ Cleanup in Teardown
+Always clean data in teardown:
 ```typescript
 export async function teardown() {
   await redis.del('user:count');
@@ -401,7 +401,7 @@ export async function teardown() {
 }
 ```
 
-### ✅ Manejo de Errores
+### ✅ Error Handling
 ```typescript
 try {
   await redis.set('key', 'value');
@@ -410,35 +410,35 @@ try {
 }
 ```
 
-### ❌ Evitar
-- No usar Redis para datos grandes (>1MB)
-- No hacer operaciones síncronas en el default function
-- No olvidar disconnect() en teardown
+### ❌ Avoid
+- Don't use Redis for large data (>1MB)
+- Don't make synchronous operations in the default function
+- Don't forget disconnect() in teardown
 
 ## Troubleshooting
 
-### Redis no conecta
+### Redis not connecting
 ```bash
-# Verificar que Redis está corriendo
+# Verify Redis is running
 redis-cli ping
 
-# Verificar puerto
+# Check port
 netstat -an | grep 6379
 
-# Verificar URL
+# Check URL
 echo $REDIS_URL
 ```
 
-### Datos no persisten
-- Verificar TTL
-- Verificar que no se está llamando a `del()` prematuramente
+### Data not persisting
+- Check TTL
+- Verify you're not calling `del()` prematurely
 
 ### Performance
-- Usar `mget`/`mset` para operaciones múltiples
-- Considerar usar pipelines para operaciones batch
-- Monitorear latencia con `redis.info()`
+- Use `mget`/`mset` for multiple operations
+- Consider using pipelines for batch operations
+- Monitor latency with `redis.info()`
 
-## Variables de Entorno
+## Environment Variables
 
 ```bash
 # .env
@@ -447,6 +447,6 @@ REDIS_URL=redis://localhost:6379
 # Docker
 REDIS_URL=redis://redis:6379
 
-# Redis con auth
+# Redis with auth
 REDIS_URL=redis://:password@localhost:6379
 ```

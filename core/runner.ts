@@ -140,8 +140,8 @@ export class Runner {
           logOutput += output;
           logStream.write(output);
 
-          // Detect summary section (starts after the test execution)
-          if (output.includes('running (') || output.includes('✓ [======') || capturingSummary) {
+          // Detect summary section (starts with THRESHOLDS header)
+          if (output.includes('█ THRESHOLDS') || output.includes('THRESHOLDS') || capturingSummary) {
             capturingSummary = true;
             summaryOutput += output;
           }
@@ -157,8 +157,8 @@ export class Runner {
         child.on('exit', (code) => {
             logStream.end();
             
-            // Save summary to separate file
-            if (summaryOutput) {
+            // Save summary to separate file (only if we captured summary content)
+            if (summaryOutput && summaryOutput.length > 50) {
               fs.writeFileSync(summaryFilePath, summaryOutput);
             }
 
@@ -179,7 +179,8 @@ export class Runner {
     console.log('\n📊 Generating custom HTML report...');
     try {
       const { exec } = await import('child_process');
-      const reportCommand = `node bin/report.js --input="${jsonOutputPath}" --client="${this.options.client}" --test="${testName}" --k6-dashboard="${path.basename(webDashboardPath)}"`;
+      const customReportPath = path.join(reportDir, `custom-report-${timestamp}.html`);
+      const reportCommand = `node bin/report.js --input="${jsonOutputPath}" --output="${customReportPath}" --client="${this.options.client}" --test="${testName}" --k6-dashboard="${path.basename(webDashboardPath)}"`;
       await new Promise<void>((resolve, reject) => {
         exec(reportCommand, { cwd: this.rootDir }, (error: Error | null, stdout: string, stderr: string) => {
           if (error) {

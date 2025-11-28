@@ -33,14 +33,8 @@ export class Runner {
     console.log('Loaded Configuration:', config);
 
     // 3. Determine Test Script
-    // If a specific test file is provided, use it. Otherwise, look for a default or scenario.
     let scriptPath = '';
     if (this.options.test) {
-        // Try to find the script in the source directory first (if it's .js or .ts and we support it)
-        // But since we compile to dist, we should look there for the .js file.
-        
-        // Check if we are running from source or if we should look in dist
-        // Prioritize dist for execution if we are building the project
         const possiblePaths = [
             path.join(this.rootDir, 'dist', 'clients', this.options.client, 'scenarios', this.options.test.replace('.ts', '.js')),
             path.join(clientDir, 'scenarios', this.options.test)
@@ -52,20 +46,64 @@ export class Runner {
                 break;
             }
         }
-    } else {
-        // Default behavior or error
-        throw new Error('No test script specified. Use --test <filename>');
+    } else if (this.options.scenario) {
+        const scenarioPath = path.join(clientDir, 'scenarios', this.options.scenario);
+        if (fs.existsSync(scenarioPath)) {
+            scriptPath = scenarioPath;
+        }
     }
 
     if (!scriptPath) {
         throw new Error(`Test script not found. Searched in: ${clientDir}/scenarios and dist/`);
     }
 
-    // 4. Build k6 Command
-    // We pass the merged config as an environment variable
+    // 4. Setup report directories and paths
+    const testName = this.options.test?.replace('.ts', '').replace('.js', '') || 'test';
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').replace('T', '_').split('.')[0];
+    const reportDir = path.join(this.rootDir, 'reports', this.options.client, testName);
+    await fs.ensureDir(reportDir);
+
+    const jsonOutputPath = path.join(reportDir, `k6-output-${timestamp}.json`);
+    const webDashboardPath = path.join(reportDir, `k6-dashboard-${timestamp}.html`);
+
+    // 5. Build k6 command arguments with options
     const k6Args = ['run', scriptPath];
     
-    // Inject Environment Variables
+    // Add k6 options from config
+    const k6Options = config.k6Options || {};
+    
+    // Summary mode (default: full)
+    const summaryMode = k6Options.summaryMode || process.env.K6_SUMMARY_MODE || 'full';
+    k6Args.push('--summary-mode', summaryMode);
+    
+    if (k6Options.summaryTrendStats) {
+      k6Args.push('--summary-trend-stats', k6Options.summaryTrendStats.join(','));
+    }
+    if (k6Options.summaryTimeUnit) {
+      k6Args.push('--summary-time-unit', k6Options.summaryTimeUnit);
+    }
+    if (k6Options.noColor) {
+      k6Args.push('--no-color');
+    }
+    if (k6Options.quiet) {
+      k6Args.push('--quiet');
+    }
+
+    // Add output formats
+    k6Args.push('--out', `json=${jsonOutputPath}`);
+    k6Args.push('--out', `web-dashboard=export=${webDashboardPath}`);
+
+    // Add metrics backends if configured
+    if (k6Options.metricsBackends && Array.isArray(k6Options.metricsBackends)) {
+      for (const backend of k6Options.metricsBackends) {
+        const outArg = this.buildMetricsBackendArg(backend);
+        if (outArg) {
+          k6Args.push('--out', outArg);
+        }
+      }
+    }
+
+    // Inject the merged configuration as an environment variable
     const env = {
       ...process.env,
       CLIENT: this.options.client,
@@ -73,17 +111,16 @@ export class Runner {
       CONFIG: JSON.stringify(config),
     };
 
-    console.log(`Executing k6: k6 ${k6Args.join(' ')}`);
-    console.log(`CWD: ${this.rootDir}`);
-    console.log(`Script exists: ${fs.existsSync(scriptPath)}`);
-    console.log(`PATH: ${process.env.PATH}`);
+    console.log(`\nExecuting k6: k6 ${k6Args.join(' ')}`);
+    console.log(`Report directory: ${reportDir}`);
+    console.log(`JSON output: ${jsonOutputPath}`);
+    console.log(`Web dashboard: ${webDashboardPath}\n`);
 
-    // 5. Execute
-    // Using exec to mimic shell execution
+    // 6. Execute k6
     const command = `k6 ${k6Args.join(' ')}`;
     const { exec } = await import('child_process');
     
-    return new Promise<void>((resolve, reject) => {
+    await new Promise<void>((resolve, reject) => {
         const child = exec(command, { 
             env,
             cwd: this.rootDir 
@@ -100,11 +137,61 @@ export class Runner {
             }
         });
     });
+
+    // 7. Generate custom HTML report
+    console.log('\n📊 Generating custom HTML report...');
+    try {
+      const reportCommand = `node bin/report.js --input="${jsonOutputPath}" --client="${this.options.client}" --test="${testName}" --k6-dashboard="${path.basename(webDashboardPath)}"`;
+      await new Promise<void>((resolve, reject) => {
+        exec(reportCommand, { cwd: this.rootDir }, (error, stdout, stderr) => {
+          if (error) {
+            console.error('Error generating custom report:', error);
+            reject(error);
+          } else {
+            console.log(stdout);
+            resolve();
+          }
+        });
+      });
+    } catch (error) {
+      console.error('Failed to generate custom HTML report:', error);
+    }
+  }
+
+  private buildMetricsBackendArg(backend: any): string | null {
+    switch (backend.type) {
+      case 'prometheus':
+        return 'experimental-prometheus-rw';
+      case 'datadog':
+        return 'datadog';
+      case 'newrelic':
+        return 'newrelic';
+      case 'dynatrace':
+        return 'dynatrace';
+      case 'influxdb':
+        if (backend.url && backend.db) {
+          return `influxdb=${backend.url}/${backend.db}`;
+        }
+        return 'influxdb';
+      default:
+        console.warn(`Unknown metrics backend type: ${backend.type}`);
+        return null;
+    }
   }
 
   private async loadConfig(clientDir: string) {
-    // Load Core Defaults (could be in core/defaults.json)
-    const coreDefaults = { baseUrl: 'http://localhost' };
+    // Load Core Defaults with k6 options
+    const coreDefaults = { 
+      baseUrl: 'http://localhost',
+      k6Options: {
+        summaryMode: 'full',
+        summaryTrendStats: ['min', 'avg', 'med', 'max', 'p(90)', 'p(95)', 'p(99)', 'p(99.9)'],
+        summaryTimeUnit: 'ms',
+        noColor: false,
+        quiet: false,
+        metricsBackends: []
+      }
+    };
 
     // Load Client Defaults
     const clientDefaultsPath = path.join(clientDir, 'config', 'default.json');
@@ -127,11 +214,28 @@ export class Runner {
     }
 
     // Merge: Core < Client Default < Client Env < Custom Config
-    return {
+    const mergedConfig = {
       ...coreDefaults,
       ...clientDefaults,
       ...clientEnv,
       ...customConfig,
     };
+
+    // Override k6Options from environment variables if present
+    if (process.env.K6_SUMMARY_TREND_STATS) {
+      mergedConfig.k6Options = mergedConfig.k6Options || {};
+      mergedConfig.k6Options.summaryTrendStats = process.env.K6_SUMMARY_TREND_STATS.split(',');
+    }
+    if (process.env.K6_SUMMARY_TIME_UNIT) {
+      mergedConfig.k6Options = mergedConfig.k6Options || {};
+      mergedConfig.k6Options.summaryTimeUnit = process.env.K6_SUMMARY_TIME_UNIT;
+    }
+    if (process.env.K6_METRICS_BACKENDS) {
+      mergedConfig.k6Options = mergedConfig.k6Options || {};
+      const backends = process.env.K6_METRICS_BACKENDS.split(',').map(type => ({ type: type.trim() }));
+      mergedConfig.k6Options.metricsBackends = backends;
+    }
+
+    return mergedConfig;
   }
 }

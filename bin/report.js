@@ -49,20 +49,22 @@ if (options.input) {
   }
 }
 
-// Default output: reports/{client}/{test}/custom-report-{timestamp}.html
-const defaultOutput = path.join('reports', clientName, testName, `custom-report-${timestamp}.html`);
-const { input, output = defaultOutput, test = testName, client = clientName, 'k6-dashboard': k6Dashboard } = options;
+// Default output: reports/{client}/{test}/enterprise-report-{timestamp}.html
+const defaultOutput = path.join('reports', clientName, testName, `enterprise-report-${timestamp}.html`);
+const { input, output = defaultOutput, test = testName, client = clientName, 'k6-dashboard': k6Dashboard, 'k6-log': k6Log, 'k6-summary': k6Summary } = options;
 
 if (!input && process.stdin.isTTY) {
-  console.error('Usage: node bin/report.js --input=<json-file> [--output=<html-file>] [--test=<test-name>] [--client=<client-name>] [--k6-dashboard=<filename>]');
+  console.error('Usage: node bin/report.js --input=<json-file> [--output=<html-file>] [--test=<test-name>] [--client=<client-name>] [--k6-dashboard=<filename>] [--k6-log=<filename>] [--k6-summary=<filename>]');
   console.error('   or: k6 run --out json=- test.js | node bin/report.js [--output=<html-file>] [--test=<test-name>]');
   console.error('');
   console.error('Options:');
   console.error('  --input=<file>        Path to k6 JSON output file');
-  console.error('  --output=<file>       Path for generated HTML report (default: reports/{client}/{test}/custom-report-{timestamp}.html)');
+  console.error('  --output=<file>       Path for generated HTML report (default: reports/{client}/{test}/enterprise-report-{timestamp}.html)');
   console.error('  --test=<name>         Test name for the report');
   console.error('  --client=<name>       Client name for the report');
   console.error('  --k6-dashboard=<file> Filename of k6 web dashboard HTML (for hyperlinking)');
+  console.error('  --k6-log=<file>       Filename of k6 execution log (for hyperlinking)');
+  console.error('  --k6-summary=<file>   Filename of k6 summary file (for hyperlinking)');
   console.error('');
   console.error('Examples:');
   console.error('  node bin/report.js --input=output.json');
@@ -215,7 +217,7 @@ function calculateStats(values) {
 /**
  * Generate Enterprise HTML report with charts and detailed breakdowns
  */
-function generateHTML(metrics, checks, testInfo, groupedMetrics, testName, clientName, k6Dashboard) {
+function generateHTML(metrics, checks, testInfo, groupedMetrics, testName, clientName, k6Dashboard, k6Log, k6Summary) {
   const checkStats = Object.entries(checks).map(([name, data]) => ({
     name,
     passed: data.passed,
@@ -409,16 +411,20 @@ function generateHTML(metrics, checks, testInfo, groupedMetrics, testName, clien
     .header .k6-dashboard-link {
       text-align: center;
       margin-top: 20px;
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      flex-wrap: wrap;
     }
     .dashboard-button {
       display: inline-block;
       background: linear-gradient(135deg, #10b981, #059669);
       color: white;
-      padding: 12px 30px;
+      padding: 12px 24px;
       border-radius: 8px;
       text-decoration: none;
       font-weight: 700;
-      font-size: 1em;
+      font-size: 0.95em;
       transition: all 0.3s ease;
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
@@ -426,6 +432,18 @@ function generateHTML(metrics, checks, testInfo, groupedMetrics, testName, clien
       background: linear-gradient(135deg, #059669, #047857);
       transform: translateY(-2px);
       box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+    .log-button {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+    }
+    .log-button:hover {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    }
+    .summary-button {
+      background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    }
+    .summary-button:hover {
+      background: linear-gradient(135deg, #7c3aed, #6d28d9);
     }
     .header .timestamp {
       display: grid;
@@ -763,11 +781,11 @@ function generateHTML(metrics, checks, testInfo, groupedMetrics, testName, clien
           <span class="info-value">${testName}</span>
         </div>
       </div>
-      ${k6Dashboard ? `
+      ${k6Dashboard || k6Log || k6Summary ? `
       <div class="k6-dashboard-link">
-        <a href="./${k6Dashboard}" target="_blank" class="dashboard-button">
-          📊 View k6 Web Dashboard
-        </a>
+        ${k6Dashboard ? `<a href="./${k6Dashboard}" target="_blank" class="dashboard-button">📊 k6 Dashboard</a>` : ''}
+        ${k6Log ? `<a href="./${k6Log}" target="_blank" class="dashboard-button log-button">📄 Execution Log</a>` : ''}
+        ${k6Summary ? `<a href="./${k6Summary}" target="_blank" class="dashboard-button summary-button">📋 Summary</a>` : ''}
       </div>
       ` : ''}
       <div class="timestamp">
@@ -1024,7 +1042,7 @@ async function main() {
       });
   });
 
-  const html = generateHTML(metrics, checks, testInfo, groupedMetrics, test, client, k6Dashboard);
+  const html = generateHTML(metrics, checks, testInfo, groupedMetrics, test, client, k6Dashboard, k6Log, k6Summary);
   
   const outputPath = path.resolve(output);
   

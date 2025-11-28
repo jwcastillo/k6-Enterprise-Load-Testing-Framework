@@ -232,6 +232,20 @@ function generateHTML(metrics, checks, testInfo, groupedMetrics) {
   const httpDurationData = metrics.http_req_duration ? calculateStats(metrics.http_req_duration.values) : null;
   const httpWaitingData = metrics.http_req_waiting ? calculateStats(metrics.http_req_waiting.values) : null;
 
+  // Define thresholds (these could come from config in the future)
+  const thresholds = {
+    http_req_duration_p95: 500, // 500ms
+    http_req_waiting_p95: 300,  // 300ms
+    http_req_failed_rate: 0.01  // 1%
+  };
+
+  // Check threshold violations
+  const checkThreshold = (metricName, value, threshold) => {
+    if (!threshold) return false;
+    return value > threshold;
+  };
+
+
   // Prepare grouped metrics for display
   let groupedMetricsHTML = '';
   Object.keys(groupedMetrics).forEach(group => {
@@ -245,10 +259,14 @@ function generateHTML(metrics, checks, testInfo, groupedMetrics) {
           const waitingStats = pathMetrics.http_req_waiting ? calculateStats(pathMetrics.http_req_waiting.values) : null;
           const failedStats = pathMetrics.http_req_failed ? calculateStats(pathMetrics.http_req_failed.values) : null;
           const reqCount = pathMetrics.http_reqs ? pathMetrics.http_reqs.values.length : 0;
+
+          const durationViolation = durationStats && checkThreshold('http_req_duration_p95', durationStats.p95, thresholds.http_req_duration_p95);
+          const waitingViolation = waitingStats && checkThreshold('http_req_waiting_p95', waitingStats.p95, thresholds.http_req_waiting_p95);
           
           return `
-            <div class="path-card">
+            <div class="path-card ${durationViolation || waitingViolation ? 'threshold-violation' : ''}">
               <h3>📍 ${path}</h3>
+              ${durationViolation || waitingViolation ? '<div class="violation-badge">⚠️ Threshold Violation</div>' : ''}
               <div class="path-stats">
                 <div class="path-stat">
                   <span class="label">Requests:</span>
@@ -257,11 +275,11 @@ function generateHTML(metrics, checks, testInfo, groupedMetrics) {
                 ${durationStats ? `
                 <div class="path-stat">
                   <span class="label">Avg Duration:</span>
-                  <span class="value">${durationStats.avg.toFixed(2)}ms</span>
+                  <span class="value ${durationViolation ? 'violation' : ''}">${durationStats.avg.toFixed(2)}ms</span>
                 </div>
                 <div class="path-stat">
                   <span class="label">P95 Duration:</span>
-                  <span class="value">${durationStats.p95.toFixed(2)}ms</span>
+                  <span class="value ${durationViolation ? 'violation' : ''}">${durationStats.p95.toFixed(2)}ms</span>
                 </div>
                 ` : ''}
                 ${failedStats ? `
@@ -286,16 +304,21 @@ function generateHTML(metrics, checks, testInfo, groupedMetrics) {
                 <tbody>
                   ${Object.keys(pathMetrics).filter(m => m.startsWith('http_req')).map(metricName => {
                     const stats = calculateStats(pathMetrics[metricName].values);
-                    return stats ? `
-                      <tr>
+                    if (!stats) return '';
+                    
+                    const isViolation = (metricName === 'http_req_duration' && stats.p95 > thresholds.http_req_duration_p95) ||
+                                       (metricName === 'http_req_waiting' && stats.p95 > thresholds.http_req_waiting_p95);
+                    
+                    return `
+                      <tr class="${isViolation ? 'violation-row' : ''}">
                         <td><strong>${metricName}</strong></td>
                         <td>${stats.min.toFixed(2)}</td>
                         <td>${stats.avg.toFixed(2)}</td>
                         <td>${stats.p90.toFixed(2)}</td>
-                        <td>${stats.p95.toFixed(2)}</td>
+                        <td class="${isViolation ? 'violation' : ''}">${stats.p95.toFixed(2)}</td>
                         <td>${stats.max.toFixed(2)}</td>
                       </tr>
-                    ` : '';
+                    `;
                   }).join('')}
                 </tbody>
               </table>
@@ -520,6 +543,143 @@ function generateHTML(metrics, checks, testInfo, groupedMetrics) {
       font-size: 1.5em;
       margin-bottom: 10px;
     }
+
+    
+    /* Modern Design Enhancements */
+    :root {
+      --primary: #667eea;
+      --secondary: #764ba2;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --violation: #dc2626;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .container {
+      animation: fadeIn 0.5s ease-in;
+    }
+    
+    .header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+      opacity: 0.3;
+    }
+    
+    .header > * {
+      position: relative;
+      z-index: 1;
+    }
+    
+    .violation-row {
+      background: #fef2f2 !important;
+    }
+    
+    .violation-row:hover {
+      background: #fee2e2 !important;
+    }
+    
+    .path-card.threshold-violation {
+      border-left-color: var(--violation);
+      background: linear-gradient(to bottom right, #fef2f2, #fee2e2);
+    }
+    
+    .violation-badge {
+      display: inline-block;
+      background: var(--violation);
+      color: white;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.85em;
+      font-weight: 700;
+      margin-bottom: 15px;
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    
+    .path-stat .value.violation,
+    .path-table td.violation {
+      color: var(--violation);
+      font-weight: 800;
+    }
+    
+    /* Print Styles */
+    @media print {
+      body {
+        background: white;
+        padding: 0;
+      }
+      
+      .container {
+        box-shadow: none;
+        border-radius: 0;
+      }
+      
+      .header {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      
+      .stat-card, .path-card {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      
+      .section {
+        page-break-inside: avoid;
+      }
+      
+      .chart-container {
+        page-break-inside: avoid;
+      }
+      
+      table {
+        page-break-inside: auto;
+      }
+      
+      tr {
+        break-inside: avoid;
+        page-break-after: auto;
+      }
+      
+      .violation-row {
+        background: #fef2f2 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      
+      .path-card.threshold-violation {
+        background: linear-gradient(to bottom right, #fef2f2, #fee2e2) !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      
+      .violation-badge {
+        background: var(--violation) !important;
+        color: white !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      
+      @page {
+        margin: 1.5cm;
+        size: A4;
+      }
+    }
+
   </style>
 </head>
 <body>
@@ -651,17 +811,20 @@ function generateHTML(metrics, checks, testInfo, groupedMetrics) {
           </tr>
         </thead>
         <tbody>
-          ${metricStats.map(metric => `
-            <tr>
+          ${metricStats.map(metric => {
+            const isViolation = (metric.name === 'http_req_duration' && metric.stats.p95 > thresholds.http_req_duration_p95) ||
+                               (metric.name === 'http_req_waiting' && metric.stats.p95 > thresholds.http_req_waiting_p95);
+            return `
+            <tr class="${isViolation ? 'violation-row' : ''}">
               <td><strong>${metric.name}</strong></td>
               <td>${metric.stats.min.toFixed(2)}</td>
               <td>${metric.stats.avg.toFixed(2)}</td>
               <td>${metric.stats.median.toFixed(2)}</td>
               <td>${metric.stats.p90.toFixed(2)}</td>
-              <td>${metric.stats.p95.toFixed(2)}</td>
+              <td class="${isViolation ? 'violation' : ''}">${metric.stats.p95.toFixed(2)}</td>
               <td>${metric.stats.max.toFixed(2)}</td>
             </tr>
-          `).join('')}
+          `}).join('')}
         </tbody>
       </table>
     </div>

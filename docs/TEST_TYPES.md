@@ -2,49 +2,49 @@
 
 ## Overview
 
-El framework soporta 4 tipos de pruebas de carga:
+The framework supports 4 types of load tests:
 
-## 1. 🎯 Tests Unitarios (API Endpoints)
+## 1. 🎯 Unit Tests (API Endpoints)
 
-**Propósito**: Probar endpoints individuales de API de forma aislada.
+**Purpose**: Test individual API endpoints in isolation.
 
-**Archivo**: `clients/client-a/scenarios/example.ts`
+**File**: `clients/client-a/scenarios/example.ts`
 
-**Características**:
-- Test de un solo endpoint
-- Validaciones simples (status code, response time)
-- Ideal para smoke tests y health checks
+**Characteristics**:
+- Single endpoint test
+- Simple validations (status code, response time)
+- Ideal for smoke tests and health checks
 
-**Ejemplo de ejecución**:
+**Execution example**:
 ```bash
 node dist/core/cli.js --client=client-a --env=default --test=example.ts
 ```
 
-**Métricas clave**:
+**Key metrics**:
 - `http_req_duration`
 - `http_req_failed`
 - `checks`
 
 ---
 
-## 2. 🔄 Tests de Flujo (Multi-Step Scenarios)
+## 2. 🔄 Flow Tests (Multi-Step Scenarios)
 
-**Propósito**: Probar flujos completos de usuario con múltiples pasos secuenciales.
+**Purpose**: Test complete user flows with multiple sequential steps.
 
-**Archivo**: `clients/client-a/scenarios/auth-flow.ts`
+**File**: `clients/client-a/scenarios/auth-flow.ts`
 
-**Características**:
-- Múltiples pasos: Register → Login → Logout
-- Manejo de estado entre pasos
-- Ejecución condicional basada en resultados previos
-- Validación de flujos end-to-end
+**Characteristics**:
+- Multiple steps: Register → Login → Logout
+- State management between steps
+- Conditional execution based on previous results
+- End-to-end flow validation
 
-**Ejemplo de ejecución**:
+**Execution example**:
 ```bash
 node dist/core/cli.js --client=client-a --env=default --test=auth-flow.ts
 ```
 
-**Patrón típico**:
+**Typical pattern**:
 ```typescript
 // Step 1: Setup
 const user = createTestUser();
@@ -60,78 +60,78 @@ if (loginRes.status === 200) {
 
 ---
 
-## 3. 🌐 Tests de Navegador (UI Testing)
+## 3. 🌐 Browser Tests (UI Testing)
 
-**Propósito**: Probar interacciones del navegador y validar UI.
+**Purpose**: Test browser interactions and validate UI.
 
-**Archivo**: `clients/client-a/scenarios/browser-test.ts`
+**File**: `clients/client-a/scenarios/browser-test.ts`
 
-**Características**:
-- Navegación de páginas
-- Interacción con elementos (click, type, etc.)
-- Captura de screenshots
-- Métricas de Web Vitals (FCP, LCP)
-- Validación de elementos visibles
+**Characteristics**:
+- Page navigation
+- Element interaction (click, type, etc.)
+- Screenshot capture
+- Web Vitals metrics (FCP, LCP)
+- Visible element validation
 
-**Ejemplo de ejecución**:
+**Execution example**:
 ```bash
 K6_BROWSER_ENABLED=true node dist/core/cli.js --client=client-a --env=default --test=browser-test.ts
 ```
 
-**Métricas clave**:
+**Key metrics**:
 - `browser_web_vital_fcp` (First Contentful Paint)
 - `browser_web_vital_lcp` (Largest Contentful Paint)
 - `browser_web_vital_ttfb` (Time to First Byte)
 
-**Nota**: Requiere k6 con soporte de browser (k6 v0.43.0+)
+**Note**: Requires k6 with browser support (k6 v0.43.0+)
 
 ---
 
-## 4. 🔀 Tests Mixtos (API + Browser)
+## 4. 🔀 Mixed Tests (API + Browser)
 
-**Propósito**: Combinar pruebas de API y navegador en un solo escenario.
+**Purpose**: Combine API and browser tests in a single scenario.
 
-**Archivo**: `clients/client-a/scenarios/mixed-test.ts`
+**File**: `clients/client-a/scenarios/mixed-test.ts`
 
-**Características**:
-- Crear datos vía API
-- Verificar vía UI del navegador
-- Cleanup vía API
-- Validación end-to-end completa
+**Characteristics**:
+- Create data via API
+- Verify via browser UI
+- Cleanup via API
+- Complete end-to-end validation
 
-**Ejemplo de ejecución**:
+**Execution example**:
 ```bash
 K6_BROWSER_ENABLED=true node dist/core/cli.js --client=client-a --env=default --test=mixed-test.ts
 ```
 
-**Flujo típico**:
+**Typical flow**:
 ```
-1. API: Crear usuario/datos
-2. Browser: Login vía UI
-3. Browser: Verificar datos en UI
+1. API: Create user/data
+2. Browser: Login via UI
+3. Browser: Verify data in UI
 4. API: Cleanup/logout
 ```
 
-**Ventajas**:
-- Validación realista del flujo completo
-- Combina velocidad de API con validación de UI
-- Ideal para tests de regresión críticos
+**Advantages**:
+- Realistic complete flow validation
+- Combines API speed with UI validation
+- Ideal for critical regression tests
 
 ---
 
-## Comparación de Test Types
+## Test Types Comparison
 
-| Característica | Unitario | Flujo | Navegador | Mixto |
-|----------------|----------|-------|-----------|-------|
-| **Velocidad** | ⚡⚡⚡ | ⚡⚡ | ⚡ | ⚡ |
-| **Cobertura** | Baja | Media | Alta | Muy Alta |
-| **Complejidad** | Baja | Media | Alta | Muy Alta |
-| **Recursos** | Bajo | Medio | Alto | Muy Alto |
-| **Uso típico** | Smoke tests | User journeys | UI validation | E2E critical paths |
+| Feature | Unit | Flow | Browser | Mixed |
+|---------|------|------|---------|-------|
+| **Speed** | ⚡⚡⚡ | ⚡⚡ | ⚡ | ⚡ |
+| **Coverage** | Low | Medium | High | Very High |
+| **Complexity** | Low | Medium | High | Very High |
+| **Resources** | Low | Medium | High | Very High |
+| **Typical use** | Smoke tests | User journeys | UI validation | E2E critical paths |
 
 ---
 
-## Configuración por Tipo de Test
+## Configuration by Test Type
 
 ### Unit Tests
 ```json
@@ -194,78 +194,78 @@ K6_BROWSER_ENABLED=true node dist/core/cli.js --client=client-a --env=default --
 
 ---
 
-## Mejores Prácticas
+## Best Practices
 
-### Para Tests Unitarios
-- ✅ Mantener tests simples y enfocados
-- ✅ Usar thresholds estrictos
-- ✅ Ejecutar frecuentemente (CI/CD)
+### For Unit Tests
+- ✅ Keep tests simple and focused
+- ✅ Use strict thresholds
+- ✅ Run frequently (CI/CD)
 
-### Para Tests de Flujo
-- ✅ Validar cada paso antes de continuar
-- ✅ Manejar errores gracefully
-- ✅ Usar sleep() apropiadamente entre pasos
+### For Flow Tests
+- ✅ Validate each step before continuing
+- ✅ Handle errors gracefully
+- ✅ Use sleep() appropriately between steps
 
-### Para Tests de Navegador
-- ✅ Usar selectores estables (data-testid)
-- ✅ Capturar screenshots en puntos clave
-- ✅ Limitar VUs (browser tests son costosos)
+### For Browser Tests
+- ✅ Use stable selectors (data-testid)
+- ✅ Capture screenshots at key points
+- ✅ Limit VUs (browser tests are expensive)
 
-### Para Tests Mixtos
-- ✅ Usar API para setup/cleanup
-- ✅ Usar Browser solo para validación crítica
-- ✅ Optimizar para reducir tiempo de ejecución
+### For Mixed Tests
+- ✅ Use API for setup/cleanup
+- ✅ Use Browser only for critical validation
+- ✅ Optimize to reduce execution time
 
 ---
 
-## Cuándo Usar Cada Tipo
+## When to Use Each Type
 
-### Unitarios
-- ✅ Smoke tests diarios
+### Unit
+- ✅ Daily smoke tests
 - ✅ Health checks
-- ✅ Validación rápida de endpoints
+- ✅ Quick endpoint validation
 
-### Flujo
-- ✅ User journeys críticos
-- ✅ Tests de regresión
-- ✅ Validación de procesos de negocio
+### Flow
+- ✅ Critical user journeys
+- ✅ Regression tests
+- ✅ Business process validation
 
-### Navegador
-- ✅ Validación de UI crítica
-- ✅ Tests de accesibilidad
-- ✅ Verificación de Web Vitals
+### Browser
+- ✅ Critical UI validation
+- ✅ Accessibility tests
+- ✅ Web Vitals verification
 
-### Mixtos
-- ✅ Tests E2E de features críticas
-- ✅ Validación pre-release
-- ✅ Smoke tests comprehensivos
+### Mixed
+- ✅ E2E tests for critical features
+- ✅ Pre-release validation
+- ✅ Comprehensive smoke tests
 
 ---
 
-## 5. 🛠️ Uso de Helpers
+## 5. 🛠️ Helper Usage
 
-El framework incluye helpers potentes para simplificar la escritura de tests.
+The framework includes powerful helpers to simplify test writing.
 
-### DataHelper (Generación de Datos)
+### DataHelper (Data Generation)
 ```typescript
 import { DataHelper } from '../../../shared/helpers/DataHelper.js';
 
-// Generar usuario completo
+// Generate complete user
 const user = DataHelper.randomUser();
 console.log(user.email, user.name.full);
 
-// Generar datos específicos
+// Generate specific data
 const product = {
   name: DataHelper.randomProduct(),
   price: DataHelper.randomPrice(10, 100),
   sku: DataHelper.randomString(8).toUpperCase()
 };
 
-// Generar tarjeta de crédito válida (Luhn)
+// Generate valid credit card (Luhn)
 const creditCard = DataHelper.randomCreditCard();
 ```
 
-### ValidationHelper (Validaciones Robustas)
+### ValidationHelper (Robust Validations)
 ```typescript
 import { ValidationHelper } from '../../../shared/helpers/ValidationHelper.js';
 import { check } from 'k6';
@@ -273,49 +273,49 @@ import { check } from 'k6';
 const res = http.get(url);
 
 check(res, {
-  // Validar status
+  // Validate status
   'status is 200': (r) => ValidationHelper.hasStatus(r, 200),
   
-  // Validar estructura JSON
+  // Validate JSON structure
   'has user id': (r) => ValidationHelper.hasJsonStructure(r, ['id', 'email']),
   
-  // Validar tiempo de respuesta
+  // Validate response time
   'fast response': (r) => ValidationHelper.isResponseTimeLessThan(r, 500),
   
-  // Validar contenido
+  // Validate content
   'valid email': (r) => ValidationHelper.isValidEmail(r.json('email')),
   'valid uuid': (r) => ValidationHelper.isValidUUID(r.json('id'))
 });
 ```
 
-### RequestHelper (Construcción de Requests)
+### RequestHelper (Request Building)
 ```typescript
 import { RequestHelper } from '../../../shared/helpers/RequestHelper.js';
 
-// Headers de autenticación
+// Authentication headers
 const headers = RequestHelper.buildAuthHeaders(token, 'Bearer');
 
-// Construir query string
+// Build query string
 const query = RequestHelper.buildQueryString({
   page: 1,
   limit: 10,
   sort: 'desc'
 });
 
-// Extraer valor seguro de JSON
+// Safe JSON value extraction
 const userId = RequestHelper.extractValue(res, 'data.users[0].id');
 ```
 
-### DateHelper (Manejo de Fechas)
+### DateHelper (Date Handling)
 ```typescript
 import { DateHelper } from '../../../shared/helpers/DateHelper.js';
 
-// Fecha futura para expiración
+// Future date for expiration
 const expiryDate = DateHelper.addDays(new Date(), 30);
 
-// Formato ISO
+// ISO format
 const isoString = DateHelper.toISOString(expiryDate);
 
-// Verificar si una fecha es pasada
+// Check if date is past
 const isExpired = DateHelper.isPast(expiryDate);
 ```

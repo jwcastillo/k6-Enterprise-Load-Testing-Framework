@@ -89,6 +89,15 @@ Run tests defined purely in `default.json` or environment config:
 node dist/core/cli.js --client=client-a --test=config-driven.ts
 ```
 
+### Ejecución Remota / Gateway (Desde otro Repo)
+Puedes ejecutar tests pasando un archivo de configuración completo (scenarios + test cases) desde otro repositorio o pipeline:
+
+```bash
+node dist/core/cli.js --client=local --test=config-driven.ts --config=./path/to/custom-config.json
+```
+
+El framework actuará como un Quality Gateway, retornando exit code 1 si los thresholds fallan.
+
 ### HTML Reporting
 Generate beautiful HTML reports from test results:
 ```bash

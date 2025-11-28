@@ -7,6 +7,7 @@ interface RunnerOptions {
   env: string;
   scenario?: string;
   test?: string;
+  config?: string; // Path to custom config file
 }
 
 export class Runner {
@@ -113,11 +114,24 @@ export class Runner {
     const clientEnvPath = path.join(clientDir, 'config', `${this.options.env}.json`);
     const clientEnv = fs.existsSync(clientEnvPath) ? await fs.readJson(clientEnvPath) : {};
 
-    // Merge
+    // Load Custom Config if provided
+    let customConfig = {};
+    if (this.options.config) {
+      const customConfigPath = path.resolve(this.options.config);
+      if (fs.existsSync(customConfigPath)) {
+        console.log(`Loading custom config from: ${customConfigPath}`);
+        customConfig = await fs.readJson(customConfigPath);
+      } else {
+        console.warn(`Custom config file not found: ${customConfigPath}`);
+      }
+    }
+
+    // Merge: Core < Client Default < Client Env < Custom Config
     return {
       ...coreDefaults,
       ...clientDefaults,
       ...clientEnv,
+      ...customConfig,
     };
   }
 }

@@ -111,6 +111,7 @@ export class Runner {
       CLIENT: this.options.client,
       ENV: this.options.env,
       CONFIG: JSON.stringify(config),
+      K6_REPORT_DIR: reportDir, // Inject report directory for screenshots
     };
 
     console.log(`\nExecuting k6: k6 ${k6Args.join(' ')}`);

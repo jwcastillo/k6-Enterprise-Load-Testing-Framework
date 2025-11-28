@@ -69,17 +69,88 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: dist
-          path: dist
+          path: dist/
 
       - name: Setup k6
         uses: grafana/setup-k6-action@v1
 
-      - name: Run Test
+      - name: Run k6 tests
+        id: k6_test
+        continue-on-error: true
         run: |
-          CLIENT=${{ github.event.inputs.client || 'client-a' }}
-          ENV=${{ github.event.inputs.env || 'default' }}
-          TEST=${{ github.event.inputs.test || 'example.ts' }}
-          PROFILE=${{ github.event.inputs.profile || 'smoke' }}
+          CLIENT="${{ github.event.inputs.client || 'local' }}"
+          TEST="${{ github.event.inputs.test || 'example.ts' }}"
+          node dist/core/cli.js --client="$CLIENT" --test="$TEST"
 
-          echo "Running test with: Client=$CLIENT, Env=$ENV, Test=$TEST, Profile=$PROFILE"
-          node dist/core/cli.js --client=$CLIENT --env=$ENV --test=$TEST --profile=$PROFILE
+      - name: Display Test Summary
+        if: always()
+        run: |
+          chmod +x bin/test-summary.sh
+          CLIENT="${{ github.event.inputs.client || 'local' }}"
+          TEST_NAME=$(echo "${{ github.event.inputs.test || 'example.ts' }}" | sed 's/\.ts$//')
+          ./bin/test-summary.sh reports "$CLIENT" "$TEST_NAME" || true
+
+      - name: Upload Test Reports
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: k6-test-reports
+          path: |
+            reports/**/*.json
+            reports/**/*.html
+            reports/**/*.txt
+            reports/**/*.log
+            reports/**/*.png
+            reports/**/*.jpg
+            reports/**/*.jpeg
+          retention-days: 30
+
+      - name: Comment PR with Results
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const client = '${{ github.event.inputs.client || 'local' }}';
+            const testName = '${{ github.event.inputs.test || 'example.ts' }}'.replace('.ts', '');
+            
+            // Find latest report directory
+            const { execSync } = require('child_process');
+            const reportDir = execSync(`find reports/${client}/${testName} -type d | sort -r | head -1`).toString().trim();
+            
+            if (!reportDir) {
+              console.log('No reports found');
+              return;
+            }
+            
+            // Read summary file
+            const summaryFile = execSync(`find ${reportDir} -name "k6-summary-*.txt" | head -1`).toString().trim();
+            if (!summaryFile || !fs.existsSync(summaryFile)) {
+              console.log('Summary file not found');
+              return;
+            }
+            
+            const summary = fs.readFileSync(summaryFile, 'utf8');
+            const passed = summary.includes('checks_succeeded...................: 100.00%');
+            
+            const emoji = passed ? '✅' : '❌';
+            const status = passed ? 'PASSED' : 'FAILED';
+            
+            const comment = `## ${emoji} k6 Test Results - ${status}
+            
+**Client:** ${client}
+**Test:** ${testName}
+
+📊 **Download Reports:**
+- [View Workflow Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+- Download artifacts from the workflow run above
+
+${passed ? '🎉 All tests passed! Ready to merge.' : '⚠️ Tests failed. Please review the reports.'}
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });

@@ -65,6 +65,8 @@ export class Runner {
 
     const jsonOutputPath = path.join(reportDir, `k6-output-${timestamp}.json`);
     const webDashboardPath = path.join(reportDir, `k6-dashboard-${timestamp}.html`);
+    const logFilePath = path.join(reportDir, `k6-execution-${timestamp}.log`);
+    const summaryFilePath = path.join(reportDir, `k6-summary-${timestamp}.txt`);
 
     // 5. Build k6 command arguments with options
     const k6Args = ['run', scriptPath];
@@ -114,17 +116,52 @@ export class Runner {
     console.log(`\nExecuting k6: k6 ${k6Args.join(' ')}`);
     console.log(`Report directory: ${reportDir}`);
     console.log(`JSON output: ${jsonOutputPath}`);
-    console.log(`Web dashboard: ${webDashboardPath}\n`);
+    console.log(`Web dashboard: ${webDashboardPath}`);
+    console.log(`Log file: ${logFilePath}`);
+    console.log(`Summary file: ${summaryFilePath}\n`);
 
-    // 6. Execute k6 using spawn (avoids shell escaping issues)
+    // 6. Execute k6 and capture output to log file
+    let logOutput = '';
+    let summaryOutput = '';
+    let capturingSummary = false;
+
     await new Promise<void>((resolve, reject) => {
         const child = spawn('k6', k6Args, { 
             env,
-            cwd: this.rootDir,
-            stdio: 'inherit'
+            cwd: this.rootDir
+        });
+
+        // Create write stream for log file
+        const logStream = fs.createWriteStream(logFilePath);
+
+        child.stdout?.on('data', (data) => {
+          const output = data.toString();
+          process.stdout.write(output);
+          logOutput += output;
+          logStream.write(output);
+
+          // Detect summary section (starts after the test execution)
+          if (output.includes('running (') || output.includes('✓ [======') || capturingSummary) {
+            capturingSummary = true;
+            summaryOutput += output;
+          }
+        });
+
+        child.stderr?.on('data', (data) => {
+          const output = data.toString();
+          process.stderr.write(output);
+          logOutput += output;
+          logStream.write(output);
         });
 
         child.on('exit', (code) => {
+            logStream.end();
+            
+            // Save summary to separate file
+            if (summaryOutput) {
+              fs.writeFileSync(summaryFilePath, summaryOutput);
+            }
+
             if (code === 0) {
                 resolve();
             } else {
@@ -133,6 +170,7 @@ export class Runner {
         });
 
         child.on('error', (error) => {
+            logStream.end();
             reject(new Error(`Failed to start k6: ${error.message}`));
         });
     });

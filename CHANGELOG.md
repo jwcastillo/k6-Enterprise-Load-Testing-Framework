@@ -166,11 +166,73 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - ValidationHelper: 10/10 checks ✅
   - DateHelper: 10/10 checks ✅
 
+## [1.2.0] - 2025-11-28
+
+### Added
+- **Advanced Reporting & Dashboards**
+  - k6 web dashboard integration (159KB interactive HTML)
+  - Enterprise Report with custom HTML generation
+  - Browser Screenshots gallery in reports
+  - Execution logs capture (`.log` files)
+  - Summary extraction (`.txt` files)
+  - Report organization: `reports/{client}/{test}/` structure
+  - Links between all report artifacts (Dashboard, Log, Summary)
+
+- **CI/CD Integration**
+  - GitHub Actions workflow with test execution
+  - GitLab CI pipeline configuration
+  - Beautiful console test summaries (`bin/test-summary.sh`)
+  - Automatic artifact upload (reports + screenshots)
+  - 30-day artifact retention
+  - Fun status messages based on test results
+
+- **Observability & Debugging**
+  - `K6_DEBUG` mode for verbose request/response logging
+  - Tempo Tracing integration (`K6_TEMPO_ENABLED`)
+  - Pyroscope Profiling integration (`K6_PYROSCOPE_ENABLED`)
+  - Automatic trace propagation via `RequestHelper`
+  - Extensions documentation (`docs/EXTENSIONS.md`)
+
+- **k6 Configuration Enhancements**
+  - Summary mode configuration (default: 'full')
+  - Custom trend stats (min, avg, med, max, p90, p95, p99, p99.9)
+  - Time unit configuration (default: milliseconds)
+  - Metrics backends support:
+    - Prometheus (experimental-prometheus-rw)
+    - Datadog
+    - New Relic
+    - Dynatrace
+    - InfluxDB
+  - Environment variable overrides for all k6 options
+
+- **Browser Testing**
+  - `K6_REPORT_DIR` environment injection
+  - Automatic screenshot capture and display
+  - Browser test example (`browser-screenshot-test.ts`)
+  - Screenshot gallery in Enterprise Report
+
+- **Bin Scripts**
+  - `bin/test-summary.sh` - Formatted test result summaries
+  - Enhanced `bin/report.js` with multiple output formats
+
+- **Documentation**
+  - `docs/EXTENSIONS.md` - Extensions and instrumentation guide
+  - Updated `docs/README.md` with debugging section
+  - Comprehensive CI/CD execution examples
+
+### Changed
+- Renamed "custom report" to "Enterprise Report"
+- Modified runner to use `spawn` instead of `exec` for better shell escaping
+- Updated `RequestHelper` to support instrumentation libraries
+- Enhanced report structure with organized artifact links
+
+### Fixed
+- Shell escaping issues with k6 arguments containing parentheses
+- Summary extraction to capture only relevant section (not full output)
+
 ## [Unreleased]
 
 ### Planned
-- CI/CD pipeline templates
 - Additional client examples
-- Performance monitoring integration
-- HTML report generation
+- Performance monitoring dashboards
 - NPM package publication

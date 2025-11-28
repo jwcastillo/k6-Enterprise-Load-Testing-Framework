@@ -14,9 +14,10 @@ const runner = new Runner({
   env: args.env || 'local',
   scenario: args.scenario,
   test: args.test,
+  config: args.config, // Pass custom config path
 });
 
-runner.run().catch((err) => {
+(runner as any).run().catch((err: any) => {
   console.error(err);
   process.exit(1);
 });

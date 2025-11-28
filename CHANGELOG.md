@@ -230,7 +230,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Shell escaping issues with k6 arguments containing parentheses
 - Summary extraction to capture only relevant section (not full output)
 
-## [Unreleased]
+## [1.1.0] - 2025-11-28
 
 ### Planned
 - Additional client examples

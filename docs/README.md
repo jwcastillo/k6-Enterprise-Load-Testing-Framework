@@ -89,14 +89,15 @@ Run tests defined purely in `default.json` or environment config:
 node dist/core/cli.js --client=client-a --test=config-driven.ts
 ```
 
-### Ejecución Remota / Gateway (Desde otro Repo)
-Puedes ejecutar tests pasando un archivo de configuración completo (scenarios + test cases) desde otro repositorio o pipeline:
+### Remote Execution / Quality Gateway (From Another Repo)
+You can execute tests by passing a complete configuration file (scenarios + test cases) from another repository or pipeline:
 
 ```bash
 node dist/core/cli.js --client=local --test=config-driven.ts --config=./path/to/custom-config.json
 ```
 
-El framework actuará como un Quality Gateway, retornando exit code 1 si los thresholds fallan.
+The framework will act as a Quality Gateway, returning exit code 1 if thresholds fail.
+
 
 ## 🔄 CI/CD Pipeline Execution
 
@@ -641,6 +642,21 @@ Configuration is loaded hierarchically:
 2. Client defaults (`clients/<client>/config/default.json`)
 3. Environment-specific (`clients/<client>/config/<env>.json`)
 4. CLI flags and environment variables
+
+## 🐞 Debugging & Observability
+
+### Debug Mode
+Enable verbose request/response logging for `RequestHelper`:
+```bash
+K6_DEBUG=true ./bin/run-test.sh
+```
+
+### Tracing & Profiling
+Enable distributed tracing (Tempo) and profiling (Pyroscope):
+```bash
+K6_TEMPO_ENABLED=true K6_PYROSCOPE_ENABLED=true ./bin/run-test.sh
+```
+See [Extensions & Instrumentation](docs/EXTENSIONS.md) for details.
 
 ## 🐳 Docker
 

@@ -3,6 +3,7 @@ import http, { RefinedParams, RefinedResponse } from 'k6/http';
 import { HttpInstrumentation as TempoInstrumentation } from 'https://jslib.k6.io/http-instrumentation-tempo/1.0.0/index.js';
 // @ts-ignore
 import { HttpInstrumentation as PyroscopeInstrumentation } from 'https://jslib.k6.io/http-instrumentation-pyroscope/1.0.0/index.js';
+import { ChaosHelper } from './ChaosHelper.js';
 
 /**
  * RequestHelper - Utility for building and executing HTTP requests
@@ -10,11 +11,19 @@ import { HttpInstrumentation as PyroscopeInstrumentation } from 'https://jslib.k
 export class RequestHelper {
   private baseUrl: string;
   private headers: { [key: string]: string };
+  private httpClient: typeof http;
+  private defaultHeaders: { [key: string]: string };
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
-    this.headers = {
+    this.defaultHeaders = {
       'Content-Type': 'application/json',
+    };
+    this.headers = this.defaultHeaders; // Alias for backward compatibility if needed
+
+    // Initialize HTTP client with default k6 http
+    this.httpClient = http;
+
     // Apply Tempo Tracing if enabled
     if (__ENV.K6_TEMPO_ENABLED === 'true') {
       console.log('✨ Enabling Tempo Tracing instrumentation');
@@ -104,6 +113,11 @@ export class RequestHelper {
    * GET request
    */
   public get(path: string, params?: Record<string, string>, headers?: Record<string, string>): RefinedResponse<any> {
+    // Chaos Injection
+    if (ChaosHelper.apply()) {
+      return ChaosHelper.getErrorResponse() as unknown as RefinedResponse<any>;
+    }
+
     const url = this.buildUrl(path, params);
     const requestParams = this.buildParams({ headers: this.buildHeaders(headers) });
     this.logDebug('GET', url, requestParams);
@@ -116,6 +130,11 @@ export class RequestHelper {
    * POST request
    */
   public post(path: string, body: any, headers?: Record<string, string>): RefinedResponse<any> {
+    // Chaos Injection
+    if (ChaosHelper.apply()) {
+      return ChaosHelper.getErrorResponse() as unknown as RefinedResponse<any>;
+    }
+
     const url = this.buildUrl(path);
     const payload = typeof body === 'string' ? body : JSON.stringify(body);
     const requestParams = this.buildParams({ headers: this.buildHeaders(headers) });

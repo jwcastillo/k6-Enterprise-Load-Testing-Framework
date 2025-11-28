@@ -1,0 +1,27 @@
+apiVersion: k6.io/v1alpha1
+kind: K6
+metadata:
+  name: k6-distributed-example
+spec:
+  parallelism: 4
+  separate: false
+  runner:
+    image: ghcr.io/your-org/k6-enterprise-framework:latest
+    # Override the default entrypoint to run the framework CLI
+    command: ["node", "dist/core/cli.js"]
+    # Pass arguments to the CLI
+    args:
+      [
+        "--client=examples",
+        "--test=scenarios/ecommerce-flow.ts",
+        "--vus=50",
+        "--duration=5m",
+      ]
+    env:
+      - name: K6_DEBUG
+        value: "false"
+      - name: K6_CHAOS_ENABLED
+        value: "false"
+  starter:
+    image: ghcr.io/your-org/k6-enterprise-framework:latest
+    command: ["node", "dist/core/cli.js"]

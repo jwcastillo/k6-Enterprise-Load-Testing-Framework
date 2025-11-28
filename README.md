@@ -24,9 +24,39 @@ node dist/core/cli.js --client=local --test=example.ts
 - **[README](docs/README.md)** - Complete framework documentation
 - **[Test Types Guide](docs/TEST_TYPES.md)** - Unit, Flow, Browser, and Mixed tests (Spanish)
 - **[Redis Integration Guide](docs/REDIS.md)** - Using Redis for data management
-- **[Extensions & Instrumentation](docs/EXTENSIONS.md)** - Tracing (Tempo), Profiling (Pyroscope), and xk6 extensions (Spanish)
+- **[Extensions & Instrumentation](docs/EXTENSIONS.md)** - Tracing (Tempo), Profiling (Pyroscope), and xk6 extensions
 - **[Contributing Guide](docs/CONTRIBUTING.md)** - How to contribute to the project
+- **[Commit Guidelines](docs/COMMIT_GUIDELINES.md)** - Conventional commits and versioning
+- **[Security Policy](SECURITY.md)** - Security guidelines and reporting
 - **[Tasks & Roadmap](docs/TASKS.md)** - Project tasks and future plans
+
+## 👨‍💻 Development Workflow
+
+### Making Commits
+Use Commitizen for interactive, standardized commits:
+```bash
+git add .
+npm run commit
+```
+
+### Versioning
+Automated semantic versioning based on conventional commits:
+```bash
+# Automatic version bump (analyzes commits)
+npm run version:bump
+
+# Manual version bump
+./bin/version.sh [major|minor|patch]
+```
+
+### Security
+```bash
+# Run security audit
+npm run security:audit
+
+# Fix vulnerabilities
+npm run security:fix
+```
 
 ## ✨ Key Features
 

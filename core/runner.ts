@@ -175,16 +175,16 @@ export class Runner {
         });
     });
 
-    // 7. Generate custom HTML report
-    console.log('\n📊 Generating custom HTML report...');
+    // 7. Generate enterprise HTML report
+    console.log('\n📊 Generating enterprise HTML report...');
     try {
       const { exec } = await import('child_process');
-      const customReportPath = path.join(reportDir, `custom-report-${timestamp}.html`);
-      const reportCommand = `node bin/report.js --input="${jsonOutputPath}" --output="${customReportPath}" --client="${this.options.client}" --test="${testName}" --k6-dashboard="${path.basename(webDashboardPath)}"`;
+      const enterpriseReportPath = path.join(reportDir, `enterprise-report-${timestamp}.html`);
+      const reportCommand = `node bin/report.js --input="${jsonOutputPath}" --output="${enterpriseReportPath}" --client="${this.options.client}" --test="${testName}" --k6-dashboard="${path.basename(webDashboardPath)}" --k6-log="${path.basename(logFilePath)}" --k6-summary="${path.basename(summaryFilePath)}"`;
       await new Promise<void>((resolve, reject) => {
         exec(reportCommand, { cwd: this.rootDir }, (error: Error | null, stdout: string, stderr: string) => {
           if (error) {
-            console.error('Error generating custom report:', error);
+            console.error('Error generating enterprise report:', error);
             reject(error);
           } else {
             console.log(stdout);
@@ -193,7 +193,7 @@ export class Runner {
         });
       });
     } catch (error) {
-      console.error('Failed to generate custom HTML report:', error);
+      console.error('Failed to generate enterprise HTML report:', error);
     }
   }
 

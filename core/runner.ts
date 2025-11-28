@@ -126,59 +126,59 @@ export class Runner {
     let summaryOutput = '';
     let capturingSummary = false;
 
-    await new Promise<void>((resolve, reject) => {
-        const child = spawn('k6', k6Args, { 
-            env,
-            cwd: this.rootDir
-        });
-
-        // Create write stream for log file
-        const logStream = fs.createWriteStream(logFilePath);
-
-        child.stdout?.on('data', (data) => {
-          const output = data.toString();
-          process.stdout.write(output);
-          logOutput += output;
-          logStream.write(output);
-
-          // Detect summary section (starts with THRESHOLDS header)
-          if (output.includes('█ THRESHOLDS') || output.includes('THRESHOLDS') || capturingSummary) {
-            capturingSummary = true;
-            summaryOutput += output;
-          }
-        });
-
-        child.stderr?.on('data', (data) => {
-          const output = data.toString();
-          process.stderr.write(output);
-          logOutput += output;
-          logStream.write(output);
-        });
-
-        child.on('exit', (code) => {
-            logStream.end();
-            
-            // Save summary to separate file (only if we captured summary content)
-            if (summaryOutput && summaryOutput.length > 50) {
-              fs.writeFileSync(summaryFilePath, summaryOutput);
-            }
-
-            if (code === 0) {
-                resolve();
-            } else {
-                reject(new Error(`k6 exited with code ${code}`));
-            }
-        });
-
-        child.on('error', (error) => {
-            logStream.end();
-            reject(new Error(`Failed to start k6: ${error.message}`));
-        });
-    });
-
-    // 7. Generate enterprise HTML report
-    console.log('\n📊 Generating enterprise HTML report...');
     try {
+      await new Promise<void>((resolve, reject) => {
+          const child = spawn('k6', k6Args, { 
+              env,
+              cwd: this.rootDir
+          });
+
+          // Create write stream for log file
+          const logStream = fs.createWriteStream(logFilePath);
+
+          child.stdout?.on('data', (data) => {
+            const output = data.toString();
+            process.stdout.write(output);
+            logOutput += output;
+            logStream.write(output);
+
+            // Detect summary section (starts with THRESHOLDS header)
+            if (output.includes('█ THRESHOLDS') || output.includes('THRESHOLDS') || capturingSummary) {
+              capturingSummary = true;
+              summaryOutput += output;
+            }
+          });
+
+          child.stderr?.on('data', (data) => {
+            const output = data.toString();
+            process.stderr.write(output);
+            logOutput += output;
+            logStream.write(output);
+          });
+
+          child.on('exit', (code) => {
+              logStream.end();
+              
+              // Save summary to separate file (only if we captured summary content)
+              if (summaryOutput && summaryOutput.length > 50) {
+                fs.writeFileSync(summaryFilePath, summaryOutput);
+              }
+
+              if (code === 0) {
+                  resolve();
+              } else {
+                  reject(new Error(`k6 exited with code ${code}`));
+              }
+          });
+
+          child.on('error', (error) => {
+              logStream.end();
+              reject(new Error(`Failed to start k6: ${error.message}`));
+          });
+      });
+
+      // 7. Generate enterprise HTML report
+      console.log('\n📊 Generating enterprise HTML report...');
       const { exec } = await import('child_process');
       const enterpriseReportPath = path.join(reportDir, `enterprise-report-${timestamp}.html`);
       const reportCommand = `node bin/report.js --input="${jsonOutputPath}" --output="${enterpriseReportPath}" --client="${this.options.client}" --test="${testName}" --k6-dashboard="${path.basename(webDashboardPath)}" --k6-log="${path.basename(logFilePath)}" --k6-summary="${path.basename(summaryFilePath)}"`;
@@ -193,8 +193,25 @@ export class Runner {
           }
         });
       });
-    } catch (error) {
-      console.error('Failed to generate enterprise HTML report:', error);
+
+    } catch (error: any) {
+      console.error('\n❌ Execution Failed:');
+      console.error(`   ${error.message}`);
+
+      // Provide helpful suggestions based on error
+      if (error.message.includes('ENOENT') || error.message.includes('not found')) {
+        console.log('\n💡 Suggestion: Check if k6 is installed and in your PATH.');
+        console.log('   Run: brew install k6 (Mac) or see https://k6.io/docs/get-started/installation/');
+      } else if (error.message.includes('code 107')) {
+        console.log('\n💡 Suggestion: This usually means a script error.');
+        console.log('   Check your test script imports and syntax.');
+        console.log(`   Try running with K6_DEBUG=true for more details.`);
+      } else if (error.message.includes('code 99')) {
+        console.log('\n💡 Suggestion: This usually means a threshold failure.');
+        console.log('   Your test ran but failed performance criteria.');
+      }
+
+      throw error; // Re-throw to ensure process exits with error code
     }
   }
 

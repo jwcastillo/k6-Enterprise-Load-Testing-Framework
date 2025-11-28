@@ -98,13 +98,6 @@ node dist/core/cli.js --client=local --test=config-driven.ts --config=./path/to/
 
 El framework actuará como un Quality Gateway, retornando exit code 1 si los thresholds fallan.
 
-### HTML Reporting
-Generate beautiful HTML reports from test results:
-```bash
-# Run test and generate report
-k6 run --out json=output.json dist/clients/client-a/scenarios/example.js
-node bin/report.js --input=output.json
-```
 
 ## 🔧 Configuration
 

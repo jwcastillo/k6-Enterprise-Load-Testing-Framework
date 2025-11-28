@@ -22,7 +22,7 @@ export class AuthService extends BaseService {
   }
 
   logout() {
-    return this.requestHelper.post('/api/auth/logout');
+    return this.requestHelper.post('/api/auth/logout', {});
   }
 
   setToken(token: string) {

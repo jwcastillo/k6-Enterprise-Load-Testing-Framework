@@ -200,9 +200,9 @@ function calculateStats(values) {
 }
 
 /**
- * Generate HTML report
+ * Generate Enterprise HTML report with charts and detailed breakdowns
  */
-function generateHTML(metrics, checks, testInfo) {
+function generateHTML(metrics, checks, testInfo, groupedMetrics) {
   const checkStats = Object.entries(checks).map(([name, data]) => ({
     name,
     passed: data.passed,
@@ -225,13 +225,95 @@ function generateHTML(metrics, checks, testInfo) {
     .filter(m => m.stats);
 
   const duration = testInfo.duration ? (testInfo.duration / 1000).toFixed(2) : 'N/A';
+  const startTime = testInfo.startTime ? new Date(testInfo.startTime).toLocaleString() : 'N/A';
+  const endTime = testInfo.endTime ? new Date(testInfo.endTime).toLocaleString() : 'N/A';
+
+  // Prepare chart data for response times
+  const httpDurationData = metrics.http_req_duration ? calculateStats(metrics.http_req_duration.values) : null;
+  const httpWaitingData = metrics.http_req_waiting ? calculateStats(metrics.http_req_waiting.values) : null;
+
+  // Prepare grouped metrics for display
+  let groupedMetricsHTML = '';
+  Object.keys(groupedMetrics).forEach(group => {
+    const groupName = group || 'Default Group';
+    groupedMetricsHTML += `
+      <div class="section">
+        <h2>🎯 Group: ${groupName}</h2>
+        ${Object.keys(groupedMetrics[group]).map(path => {
+          const pathMetrics = groupedMetrics[group][path];
+          const durationStats = pathMetrics.http_req_duration ? calculateStats(pathMetrics.http_req_duration.values) : null;
+          const waitingStats = pathMetrics.http_req_waiting ? calculateStats(pathMetrics.http_req_waiting.values) : null;
+          const failedStats = pathMetrics.http_req_failed ? calculateStats(pathMetrics.http_req_failed.values) : null;
+          const reqCount = pathMetrics.http_reqs ? pathMetrics.http_reqs.values.length : 0;
+          
+          return `
+            <div class="path-card">
+              <h3>📍 ${path}</h3>
+              <div class="path-stats">
+                <div class="path-stat">
+                  <span class="label">Requests:</span>
+                  <span class="value">${reqCount}</span>
+                </div>
+                ${durationStats ? `
+                <div class="path-stat">
+                  <span class="label">Avg Duration:</span>
+                  <span class="value">${durationStats.avg.toFixed(2)}ms</span>
+                </div>
+                <div class="path-stat">
+                  <span class="label">P95 Duration:</span>
+                  <span class="value">${durationStats.p95.toFixed(2)}ms</span>
+                </div>
+                ` : ''}
+                ${failedStats ? `
+                <div class="path-stat">
+                  <span class="label">Failed:</span>
+                  <span class="value ${failedStats.max > 0 ? 'danger' : 'success'}">${failedStats.max > 0 ? 'Yes' : 'No'}</span>
+                </div>
+                ` : ''}
+              </div>
+              ${durationStats ? `
+              <table class="path-table">
+                <thead>
+                  <tr>
+                    <th>Metric</th>
+                    <th>Min</th>
+                    <th>Avg</th>
+                    <th>P90</th>
+                    <th>P95</th>
+                    <th>Max</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${Object.keys(pathMetrics).filter(m => m.startsWith('http_req')).map(metricName => {
+                    const stats = calculateStats(pathMetrics[metricName].values);
+                    return stats ? `
+                      <tr>
+                        <td><strong>${metricName}</strong></td>
+                        <td>${stats.min.toFixed(2)}</td>
+                        <td>${stats.avg.toFixed(2)}</td>
+                        <td>${stats.p90.toFixed(2)}</td>
+                        <td>${stats.p95.toFixed(2)}</td>
+                        <td>${stats.max.toFixed(2)}</td>
+                      </tr>
+                    ` : '';
+                  }).join('')}
+                </tbody>
+              </table>
+              ` : ''}
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  });
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>k6 Test Report</title>
+  <title>k6 Enterprise Test Report</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -241,7 +323,7 @@ function generateHTML(metrics, checks, testInfo) {
       min-height: 100vh;
     }
     .container {
-      max-width: 1200px;
+      max-width: 1400px;
       margin: 0 auto;
       background: white;
       border-radius: 12px;
@@ -255,7 +337,28 @@ function generateHTML(metrics, checks, testInfo) {
       text-align: center;
     }
     .header h1 { font-size: 2.5em; margin-bottom: 10px; }
-    .header p { opacity: 0.9; font-size: 1.1em; }
+    .header .subtitle { opacity: 0.9; font-size: 1.1em; margin-bottom: 20px; }
+    .header .timestamp {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255,255,255,0.2);
+    }
+    .timestamp-item {
+      text-align: center;
+    }
+    .timestamp-item .label {
+      font-size: 0.85em;
+      opacity: 0.8;
+      display: block;
+      margin-bottom: 5px;
+    }
+    .timestamp-item .value {
+      font-size: 1.1em;
+      font-weight: 600;
+    }
     .summary {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -269,6 +372,11 @@ function generateHTML(metrics, checks, testInfo) {
       border-radius: 8px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       text-align: center;
+      transition: transform 0.2s;
+    }
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     }
     .stat-card h3 {
       color: #666;
@@ -287,6 +395,10 @@ function generateHTML(metrics, checks, testInfo) {
     .stat-card.danger .value { color: #ef4444; }
     .section {
       padding: 40px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .section:last-child {
+      border-bottom: none;
     }
     .section h2 {
       font-size: 1.8em;
@@ -294,11 +406,27 @@ function generateHTML(metrics, checks, testInfo) {
       color: #333;
       border-bottom: 3px solid #667eea;
       padding-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .chart-container {
+      position: relative;
+      height: 400px;
+      margin: 30px 0;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
     table {
       width: 100%;
       border-collapse: collapse;
       margin-top: 20px;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
     th, td {
       padding: 12px;
@@ -314,6 +442,7 @@ function generateHTML(metrics, checks, testInfo) {
       letter-spacing: 0.5px;
     }
     tr:hover { background: #f8f9fa; }
+    tr:last-child td { border-bottom: none; }
     .badge {
       display: inline-block;
       padding: 4px 12px;
@@ -335,79 +464,143 @@ function generateHTML(metrics, checks, testInfo) {
       background: linear-gradient(90deg, #10b981, #059669);
       transition: width 0.3s ease;
     }
+    .path-card {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-left: 4px solid #667eea;
+    }
+    .path-card h3 {
+      color: #333;
+      margin-bottom: 15px;
+      font-size: 1.2em;
+    }
+    .path-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .path-stat {
+      background: white;
+      padding: 10px 15px;
+      border-radius: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .path-stat .label {
+      color: #666;
+      font-size: 0.9em;
+    }
+    .path-stat .value {
+      font-weight: 600;
+      color: #333;
+      font-size: 1.1em;
+    }
+    .path-stat .value.danger {
+      color: #ef4444;
+    }
+    .path-stat .value.success {
+      color: #10b981;
+    }
+    .path-table {
+      margin-top: 15px;
+      font-size: 0.9em;
+    }
     .footer {
       text-align: center;
-      padding: 20px;
+      padding: 30px;
       color: #666;
       font-size: 0.9em;
       background: #f8f9fa;
+    }
+    .footer .logo {
+      font-size: 1.5em;
+      margin-bottom: 10px;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <h1>🚀 k6 Test Report</h1>
-      <p>Generated on ${new Date().toLocaleString()}</p>
+      <h1>🚀 k6 Enterprise Test Report</h1>
+      <p class="subtitle">Performance Testing Results</p>
+      <div class="timestamp">
+        <div class="timestamp-item">
+          <span class="label">Start Time</span>
+          <span class="value">${startTime}</span>
+        </div>
+        <div class="timestamp-item">
+          <span class="label">End Time</span>
+          <span class="value">${endTime}</span>
+        </div>
+        <div class="timestamp-item">
+          <span class="label">Duration</span>
+          <span class="value">${duration}s</span>
+        </div>
+      </div>
     </div>
 
     <div class="summary">
       <div class="stat-card ${overallRate >= 90 ? 'success' : overallRate >= 70 ? 'warning' : 'danger'}">
-        <h3>Check Success Rate</h3>
+        <h3>✓ Check Success Rate</h3>
         <div class="value">${overallRate}%</div>
       </div>
       <div class="stat-card">
-        <h3>Total Checks</h3>
+        <h3>📋 Total Checks</h3>
         <div class="value">${totalChecks}</div>
       </div>
       <div class="stat-card success">
-        <h3>Passed</h3>
+        <h3>✅ Passed</h3>
         <div class="value">${passedChecks}</div>
       </div>
       <div class="stat-card ${totalChecks - passedChecks > 0 ? 'danger' : ''}">
-        <h3>Failed</h3>
+        <h3>❌ Failed</h3>
         <div class="value">${totalChecks - passedChecks}</div>
-      </div>
-      <div class="stat-card">
-        <h3>Duration</h3>
-        <div class="value">${duration}s</div>
       </div>
       ${metrics.http_req_waiting ? `
       <div class="stat-card">
-        <h3>TTFB P90</h3>
+        <h3>⏱️ TTFB P90</h3>
         <div class="value">${calculateStats(metrics.http_req_waiting.values).p90.toFixed(2)}ms</div>
       </div>
       <div class="stat-card">
-        <h3>TTFB P95</h3>
+        <h3>⏱️ TTFB P95</h3>
         <div class="value">${calculateStats(metrics.http_req_waiting.values).p95.toFixed(2)}ms</div>
-      </div>
-      <div class="stat-card">
-        <h3>TTFB P99</h3>
-        <div class="value">${calculateStats(metrics.http_req_waiting.values).p99.toFixed(2)}ms</div>
       </div>
       ` : ''}
       ${metrics.http_reqs ? `
       <div class="stat-card">
-        <h3>RPS (Avg)</h3>
+        <h3>📊 RPS (Avg)</h3>
         <div class="value">${(metrics.http_reqs.values.length / (testInfo.duration / 1000)).toFixed(2)}</div>
       </div>
       ` : ''}
       ${testInfo.vus > 0 ? `
       <div class="stat-card">
-        <h3>Max VUs</h3>
+        <h3>👥 Max VUs</h3>
         <div class="value">${testInfo.vus}</div>
       </div>
       ` : ''}
       ${testInfo.iterations > 0 ? `
       <div class="stat-card">
-        <h3>Iterations</h3>
+        <h3>🔄 Iterations</h3>
         <div class="value">${testInfo.iterations}</div>
       </div>
       ` : ''}
     </div>
 
+    ${httpDurationData && httpWaitingData ? `
     <div class="section">
-      <h2>📊 Check Results</h2>
+      <h2>📊 Response Time Distribution</h2>
+      <div class="chart-container">
+        <canvas id="responseTimeChart"></canvas>
+      </div>
+    </div>
+    ` : ''}
+
+    <div class="section">
+      <h2>✅ Check Results</h2>
       <table>
         <thead>
           <tr>
@@ -444,7 +637,7 @@ function generateHTML(metrics, checks, testInfo) {
     </div>
 
     <div class="section">
-      <h2>📈 Performance Metrics</h2>
+      <h2>📈 Overall Performance Metrics</h2>
       <table>
         <thead>
           <tr>
@@ -473,10 +666,68 @@ function generateHTML(metrics, checks, testInfo) {
       </table>
     </div>
 
+    ${groupedMetricsHTML}
+
     <div class="footer">
-      Generated by k6 Enterprise Framework Report Generator
+      <div class="logo">⚡ k6 Enterprise Framework</div>
+      <p>Generated on ${new Date().toLocaleString()}</p>
+      <p style="margin-top: 10px; opacity: 0.7;">Professional Load Testing & Performance Analysis</p>
     </div>
   </div>
+
+  <script>
+    ${httpDurationData && httpWaitingData ? `
+    // Response Time Chart
+    const ctx = document.getElementById('responseTimeChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['Min', 'Avg', 'Median', 'P90', 'P95', 'P99', 'Max'],
+        datasets: [
+          {
+            label: 'Request Duration (ms)',
+            data: [${httpDurationData.min}, ${httpDurationData.avg}, ${httpDurationData.median}, ${httpDurationData.p90}, ${httpDurationData.p95}, ${httpDurationData.p99}, ${httpDurationData.max}],
+            backgroundColor: 'rgba(102, 126, 234, 0.6)',
+            borderColor: 'rgba(102, 126, 234, 1)',
+            borderWidth: 2
+          },
+          {
+            label: 'Waiting Time / TTFB (ms)',
+            data: [${httpWaitingData.min}, ${httpWaitingData.avg}, ${httpWaitingData.median}, ${httpWaitingData.p90}, ${httpWaitingData.p95}, ${httpWaitingData.p99}, ${httpWaitingData.max}],
+            backgroundColor: 'rgba(16, 185, 129, 0.6)',
+            borderColor: 'rgba(16, 185, 129, 1)',
+            borderWidth: 2
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'top',
+          },
+          title: {
+            display: true,
+            text: 'HTTP Request Performance Breakdown',
+            font: {
+              size: 16
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Time (ms)'
+            }
+          }
+        }
+      }
+    });
+    ` : ''}
+  </script>
 </body>
 </html>`;
 }
@@ -527,7 +778,7 @@ async function main() {
       });
   });
 
-  const html = generateHTML(metrics, checks, testInfo);
+  const html = generateHTML(metrics, checks, testInfo, groupedMetrics);
   
   const outputPath = path.resolve(output);
   

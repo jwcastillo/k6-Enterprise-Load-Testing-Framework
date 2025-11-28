@@ -1,0 +1,40 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Check for common secrets patterns
+echo "🔍 Scanning for secrets..."
+
+# Patterns to check
+PATTERNS=(
+  "password\s*=\s*['\"][^'\"]+['\"]"
+  "api[_-]?key\s*=\s*['\"][^'\"]+['\"]"
+  "secret\s*=\s*['\"][^'\"]+['\"]"
+  "token\s*=\s*['\"][^'\"]+['\"]"
+  "AKIA[0-9A-Z]{16}"  # AWS Access Key
+  "AIza[0-9A-Za-z\\-_]{35}"  # Google API Key
+  "sk_live_[0-9a-zA-Z]{24}"  # Stripe Secret Key
+  "ghp_[0-9a-zA-Z]{36}"  # GitHub Personal Access Token
+  "glpat-[0-9a-zA-Z\\-_]{20}"  # GitLab Personal Access Token
+)
+
+# Get staged files
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM)
+
+# Check each pattern
+for pattern in "${PATTERNS[@]}"; do
+  for file in $STAGED_FILES; do
+    if [ -f "$file" ]; then
+      matches=$(grep -nE "$pattern" "$file" 2>/dev/null || true)
+      if [ ! -z "$matches" ]; then
+        echo "❌ Potential secret found in $file:"
+        echo "$matches"
+        echo ""
+        echo "🚨 Commit blocked! Please remove secrets before committing."
+        echo "💡 Use environment variables or .env files (add to .gitignore)"
+        exit 1
+      fi
+    fi
+  done
+done
+
+echo "✅ No secrets detected"

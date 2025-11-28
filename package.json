@@ -18,7 +18,9 @@
     "version:bump": "./bin/version.sh",
     "prepare": "husky install || true",
     "security:audit": "npm audit --audit-level=moderate",
-    "security:fix": "npm audit fix"
+    "security:fix": "npm audit fix",
+    "mock": "node bin/mock-server.js",
+    "test:parallel": "node bin/run-parallel.js"
   },
   "keywords": [
     "k6",
@@ -40,26 +42,32 @@
     }
   },
   "devDependencies": {
-    "@types/k6": "^0.54.0",
-    "@types/node": "^20.0.0",
-    "typescript": "^5.0.0",
-    "k6": "^0.0.0",
     "@commitlint/cli": "^18.0.0",
     "@commitlint/config-conventional": "^18.0.0",
+    "@types/body-parser": "^1.19.6",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.5",
+    "@types/k6": "^0.54.0",
+    "@types/node": "^20.0.0",
+    "body-parser": "^2.2.1",
     "commitizen": "^4.3.0",
+    "cors": "^2.8.5",
     "cz-conventional-changelog": "^3.3.0",
+    "express": "^5.1.0",
     "husky": "^8.0.0",
-    "lint-staged": "^15.0.0"
+    "k6": "^0.0.0",
+    "lint-staged": "^15.0.0",
+    "typescript": "^5.0.0"
   },
   "dependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/glob": "^8.1.0",
+    "@types/minimist": "^1.2.5",
     "dotenv": "^16.0.0",
-    "redis": "^4.7.0",
     "fs-extra": "^11.2.0",
     "glob": "^11.0.0",
     "minimist": "^1.2.8",
-    "@types/minimist": "^1.2.5",
-    "@types/fs-extra": "^11.0.4",
-    "@types/glob": "^8.1.0"
+    "redis": "^4.7.0"
   },
   "lint-staged": {
     "*.{ts,js}": [

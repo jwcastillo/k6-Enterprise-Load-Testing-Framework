@@ -22,9 +22,11 @@ node dist/core/cli.js --client=local --test=example.ts
 ## 📚 Documentation
 
 - **[README](docs/README.md)** - Complete framework documentation
-- **[Test Types Guide](docs/TEST_TYPES.md)** - Unit, Flow, Browser, and Mixed tests (Spanish)
+- **[Test Types Guide](docs/TEST_TYPES.md)** - Unit, Flow, Browser, and Mixed tests
 - **[Redis Integration Guide](docs/REDIS.md)** - Using Redis for data management
 - **[Extensions & Instrumentation](docs/EXTENSIONS.md)** - Tracing (Tempo), Profiling (Pyroscope), and xk6 extensions
+- **[Running Tests On-Demand](docs/RUNNING_TESTS.md)** - Execute tests via CI/CD pipelines
+- **[Client Management](docs/CLIENT_MANAGEMENT.md)** - Manage client code in separate repositories
 - **[Contributing Guide](docs/CONTRIBUTING.md)** - How to contribute to the project
 - **[Commit Guidelines](docs/COMMIT_GUIDELINES.md)** - Conventional commits and versioning
 - **[Security Policy](SECURITY.md)** - Security guidelines and reporting

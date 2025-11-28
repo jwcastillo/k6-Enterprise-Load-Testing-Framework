@@ -1,28 +1,10 @@
-name: CI
+name: CI - Validation
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
   pull_request:
-    branches: [main]
-  workflow_dispatch:
-    inputs:
-      client:
-        description: "Client to test"
-        required: true
-        default: "client-a"
-      env:
-        description: "Environment (default, staging, prod)"
-        required: true
-        default: "default"
-      test:
-        description: "Test file to run"
-        required: true
-        default: "example.ts"
-      profile:
-        description: "Load profile"
-        required: false
-        default: "smoke"
+    branches: [main, develop]
 
 jobs:
   build:
@@ -75,87 +57,6 @@ jobs:
           ! git grep -E "api[_-]?key\s*=\s*['\"][^'\"]+['\"]" -- ':!*.md' ':!SECURITY.md' || (echo "❌ Found hardcoded API keys" && exit 1)
           echo "✅ No secrets detected"
 
-  test:
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Use Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: "18.x"
-          cache: "npm"
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Download build artifacts
-        uses: actions/download-artifact@v3
-        with:
-          name: dist
-          path: dist/
-
-      - name: Setup k6
-        uses: grafana/setup-k6-action@v1
-
-      - name: Run k6 tests
-        id: k6_test
-        continue-on-error: true
-        run: |
-          CLIENT="${{ github.event.inputs.client || 'local' }}"
-          TEST="${{ github.event.inputs.test || 'example.ts' }}"
-          node dist/core/cli.js --client="$CLIENT" --test="$TEST"
-
-      - name: Display Test Summary
-        if: always()
-        run: |
-          chmod +x bin/test-summary.sh
-          CLIENT="${{ github.event.inputs.client || 'local' }}"
-          TEST_NAME=$(echo "${{ github.event.inputs.test || 'example.ts' }}" | sed 's/\.ts$//')
-          ./bin/test-summary.sh reports "$CLIENT" "$TEST_NAME" || true
-
-      - name: Upload Test Reports
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: k6-test-reports
-          path: |
-            reports/**/*.json
-            reports/**/*.html
-            reports/**/*.txt
-            reports/**/*.log
-            reports/**/*.png
-            reports/**/*.jpg
-            reports/**/*.jpeg
-          retention-days: 30
-
-      - name: Comment PR with Results
-        if: always() && github.event_name == 'pull_request'
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const fs = require('fs');
-            const client = '${{ github.event.inputs.client || 'local' }}';
-            const testName = '${{ github.event.inputs.test || 'example.ts' }}'.replace('.ts', '');
-            
-            // Find latest report directory
-            const { execSync } = require('child_process');
-            const reportDir = execSync(`find reports/${client}/${testName} -type d | sort -r | head -1`).toString().trim();
-            
-            if (!reportDir) {
-              console.log('No reports found');
-              return;
-            }
-            
-            // Read summary file
-            const summaryFile = execSync(`find ${reportDir} -name "k6-summary-*.txt" | head -1`).toString().trim();
-            if (!summaryFile || !fs.existsSync(summaryFile)) {
-              console.log('Summary file not found');
-              return;
-            }
-            
             const summary = fs.readFileSync(summaryFile, 'utf8');
             const passed = summary.includes('checks_succeeded...................: 100.00%');
             

@@ -116,18 +116,13 @@ export class Runner {
     console.log(`JSON output: ${jsonOutputPath}`);
     console.log(`Web dashboard: ${webDashboardPath}\n`);
 
-    // 6. Execute k6
-    const command = `k6 ${k6Args.join(' ')}`;
-    const { exec } = await import('child_process');
-    
+    // 6. Execute k6 using spawn (avoids shell escaping issues)
     await new Promise<void>((resolve, reject) => {
-        const child = exec(command, { 
+        const child = spawn('k6', k6Args, { 
             env,
-            cwd: this.rootDir 
+            cwd: this.rootDir,
+            stdio: 'inherit'
         });
-
-        child.stdout?.pipe(process.stdout);
-        child.stderr?.pipe(process.stderr);
 
         child.on('exit', (code) => {
             if (code === 0) {
@@ -136,14 +131,19 @@ export class Runner {
                 reject(new Error(`k6 exited with code ${code}`));
             }
         });
+
+        child.on('error', (error) => {
+            reject(new Error(`Failed to start k6: ${error.message}`));
+        });
     });
 
     // 7. Generate custom HTML report
     console.log('\n📊 Generating custom HTML report...');
     try {
+      const { exec } = await import('child_process');
       const reportCommand = `node bin/report.js --input="${jsonOutputPath}" --client="${this.options.client}" --test="${testName}" --k6-dashboard="${path.basename(webDashboardPath)}"`;
       await new Promise<void>((resolve, reject) => {
-        exec(reportCommand, { cwd: this.rootDir }, (error, stdout, stderr) => {
+        exec(reportCommand, { cwd: this.rootDir }, (error: Error | null, stdout: string, stderr: string) => {
           if (error) {
             console.error('Error generating custom report:', error);
             reject(error);

@@ -217,7 +217,7 @@ function calculateStats(values) {
 /**
  * Generate Enterprise HTML report with charts and detailed breakdowns
  */
-function generateHTML(metrics, checks, testInfo, groupedMetrics, testName, clientName, k6Dashboard, k6Log, k6Summary) {
+function generateHTML(metrics, checks, testInfo, groupedMetrics, testName, clientName, k6Dashboard, k6Log, k6Summary, screenshots = []) {
   const checkStats = Object.entries(checks).map(([name, data]) => ({
     name,
     passed: data.passed,
@@ -939,6 +939,26 @@ function generateHTML(metrics, checks, testInfo, groupedMetrics, testName, clien
     </div>
   </div>
 
+    ${screenshots && screenshots.length > 0 ? `
+    <div class="container" style="margin-top: 30px;">
+      <div class="card">
+        <div class="card-header">
+          <h2>📸 Browser Screenshots</h2>
+        </div>
+        <div class="screenshots-grid">
+          ${screenshots.map(shot => `
+            <div class="screenshot-item">
+              <a href="./${shot}" target="_blank">
+                <img src="./${shot}" alt="${shot}" loading="lazy" />
+              </a>
+              <div class="screenshot-name">${shot}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+    ` : ''}
+
   <script>
     ${httpDurationData && httpWaitingData ? `
     // Response Time Chart
@@ -1042,7 +1062,21 @@ async function main() {
       });
   });
 
-  const html = generateHTML(metrics, checks, testInfo, groupedMetrics, test, client, k6Dashboard, k6Log, k6Summary);
+  // Scan for screenshots in the output directory
+  const reportDir = path.dirname(output);
+  let screenshots = [];
+  try {
+    if (fs.existsSync(reportDir)) {
+      const files = fs.readdirSync(reportDir);
+      screenshots = files
+        .filter(file => file.endsWith('.png') || file.endsWith('.jpg') || file.endsWith('.jpeg'))
+        .map(file => path.basename(file));
+    }
+  } catch (e) {
+    console.warn('Failed to scan for screenshots:', e);
+  }
+
+  const html = generateHTML(metrics, checks, testInfo, groupedMetrics, test, client, k6Dashboard, k6Log, k6Summary, screenshots);
   
   const outputPath = path.resolve(output);
   

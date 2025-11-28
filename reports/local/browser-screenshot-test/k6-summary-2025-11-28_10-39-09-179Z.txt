@@ -1,0 +1,72 @@
+
+
+  █ THRESHOLDS 
+
+    checks
+    ✓ 'rate==1.0' rate=100.00%
+
+
+  █ TOTAL RESULTS 
+
+    checks_total.......................: 1       0.089494/s
+    checks_succeeded...................: 100.00% 1 out of 1
+    checks_failed......................: 0.00%   0 out of 1
+
+    ✓ header is visible
+
+    EXECUTION
+    iteration_duration...................................: min=3734.28ms avg=3734.28ms med=3734.28ms max=3734.28ms p(90)=3734.28ms p(95)=3734.28ms p(99)=3734.28ms p(99.9)=3734.28ms
+    iterations...........................................: 1      0.089494/s
+    vus..................................................: 1      min=1      max=1
+    vus_max..............................................: 1      min=1      max=1
+
+    NETWORK
+    data_received........................................: 0 B    0 B/s
+    data_sent............................................: 0 B    0 B/s
+
+    BROWSER
+    browser_data_received................................: 1.7 kB 152 B/s
+    browser_data_sent....................................: 414 B  37 B/s
+    browser_http_req_duration............................: min=180.38ms  avg=495.54ms  med=495.55ms  max=810.71ms  p(90)=747.68ms  p(95)=779.19ms  p(99)=804.40ms  p(99.9)=810.08ms 
+    browser_http_req_failed..............................: 50.00% 1 out of 2
+
+    WEB_VITALS
+    browser_web_vital_cls................................: min=0         avg=0         med=0         max=0         p(90)=0         p(95)=0         p(99)=0         p(99.9)=0        
+    browser_web_vital_fcp................................: min=1552.00ms avg=1552.00ms med=1552.00ms max=1552.00ms p(90)=1552.00ms p(95)=1552.00ms p(99)=1552.00ms p(99.9)=1552.00ms
+    browser_web_vital_lcp................................: min=1552.00ms avg=1552.00ms med=1552.00ms max=1552.00ms p(90)=1552.00ms p(95)=1552.00ms p(99)=1552.00ms p(99.9)=1552.00ms
+    browser_web_vital_ttfb...............................: min=815.10ms  avg=815.10ms  med=815.10ms  max=815.10ms  p(90)=815.10ms  p(95)=815.10ms  p(99)=815.10ms  p(99.9)=815.10ms 
+
+
+  █ SCENARIO: browser 
+
+    checks_total.......................: 1       0.089494/s
+    checks_succeeded...................: 100.00% 1 out of 1
+    checks_failed......................: 0.00%   0 out of 1
+
+    ✓ header is visible
+
+    EXECUTION
+    iteration_duration...................................: min=3734.28ms avg=3734.28ms med=3734.28ms max=3734.28ms p(90)=3734.28ms p(95)=3734.28ms p(99)=3734.28ms p(99.9)=3734.28ms
+    iterations...........................................: 1      0.089494/s
+
+    NETWORK
+    data_received........................................: 0 B    0 B/s
+    data_sent............................................: 0 B    0 B/s
+
+    BROWSER
+    browser_data_received................................: 1.7 kB 152 B/s
+    browser_data_sent....................................: 414 B  37 B/s
+    browser_http_req_duration............................: min=180.38ms  avg=495.54ms  med=495.55ms  max=810.71ms  p(90)=747.68ms  p(95)=779.19ms  p(99)=804.40ms  p(99.9)=810.08ms 
+    browser_http_req_failed..............................: 50.00% 1 out of 2
+
+    WEB_VITALS
+    browser_web_vital_cls................................: min=0         avg=0         med=0         max=0         p(90)=0         p(95)=0         p(99)=0         p(99.9)=0        
+    browser_web_vital_fcp................................: min=1552.00ms avg=1552.00ms med=1552.00ms max=1552.00ms p(90)=1552.00ms p(95)=1552.00ms p(99)=1552.00ms p(99.9)=1552.00ms
+    browser_web_vital_lcp................................: min=1552.00ms avg=1552.00ms med=1552.00ms max=1552.00ms p(90)=1552.00ms p(95)=1552.00ms p(99)=1552.00ms p(99.9)=1552.00ms
+    browser_web_vital_ttfb...............................: min=815.10ms  avg=815.10ms  med=815.10ms  max=815.10ms  p(90)=815.10ms  p(95)=815.10ms  p(99)=815.10ms  p(99.9)=815.10ms 
+
+
+
+
+running (00m11.2s), 0/1 VUs, 1 complete and 0 interrupted iterations
+browser ✓ [ 100% ] 1 VUs  00m11.2s/10m0s  1/1 shared iters

@@ -1,0 +1,112 @@
+{
+  "testInfo": {
+    "name": "browser-screenshot-test",
+    "timestamp": "2025-11-28T10:20:22.915Z",
+    "duration": 38000,
+    "vus": 1,
+    "iterations": 1
+  },
+  "files": {
+    "report": "enterprise-report-2025-11-28_10-19-43-060Z.html",
+    "input": "/Users/jw.castillo/Documents/personales/fmw/reports/local/browser-screenshot-test/k6-output-2025-11-28_10-19-43-060Z.json"
+  },
+  "summary": {
+    "totalChecks": 0,
+    "passedChecks": 0,
+    "failedChecks": 0
+  },
+  "checks": {},
+  "metrics": {
+    "vus": {
+      "min": 1,
+      "max": 1,
+      "avg": 1,
+      "median": 1,
+      "p90": 1,
+      "p95": 1,
+      "p99": 1
+    },
+    "vus_max": {
+      "min": 1,
+      "max": 1,
+      "avg": 1,
+      "median": 1,
+      "p90": 1,
+      "p95": 1,
+      "p99": 1
+    },
+    "browser_data_sent": {
+      "min": 212,
+      "max": 235,
+      "avg": 217.75,
+      "median": 212,
+      "p90": 235,
+      "p95": 235,
+      "p99": 235
+    },
+    "browser_http_req_duration": {
+      "min": 105.083,
+      "max": 1035.727,
+      "avg": 438.0570000000001,
+      "median": 173.361,
+      "p90": 1035.727,
+      "p95": 1035.727,
+      "p99": 1035.727
+    },
+    "browser_data_received": {
+      "min": 365,
+      "max": 15502,
+      "avg": 7336.333333333333,
+      "median": 6142,
+      "p90": 15502,
+      "p95": 15502,
+      "p99": 15502
+    },
+    "browser_http_req_failed": {
+      "min": 0,
+      "max": 0,
+      "avg": 0,
+      "median": 0,
+      "p90": 0,
+      "p95": 0,
+      "p99": 0
+    },
+    "browser_web_vital_ttfb": {
+      "min": 1143.5,
+      "max": 1143.5,
+      "avg": 1143.5,
+      "median": 1143.5,
+      "p90": 1143.5,
+      "p95": 1143.5,
+      "p99": 1143.5
+    },
+    "browser_web_vital_fcp": {
+      "min": 1644,
+      "max": 1644,
+      "avg": 1644,
+      "median": 1644,
+      "p90": 1644,
+      "p95": 1644,
+      "p99": 1644
+    },
+    "iteration_duration": {
+      "min": 33611.815666,
+      "max": 33611.815666,
+      "avg": 33611.815666,
+      "median": 33611.815666,
+      "p90": 33611.815666,
+      "p95": 33611.815666,
+      "p99": 33611.815666
+    },
+    "iterations": {
+      "min": 1,
+      "max": 1,
+      "avg": 1,
+      "median": 1,
+      "p90": 1,
+      "p95": 1,
+      "p99": 1
+    }
+  },
+  "groupedMetrics": {}
+}

@@ -49,18 +49,20 @@ if (options.input) {
   }
 }
 
-// Default output: reports/<test-name>/<test-name>_<timestamp>.html
-const defaultOutput = path.join('reports', testName, `${testName}_${timestamp}.html`);
-const { input, output = defaultOutput, test = testName, client = clientName } = options;
+// Default output: reports/{client}/{test}/custom-report-{timestamp}.html
+const defaultOutput = path.join('reports', clientName, testName, `custom-report-${timestamp}.html`);
+const { input, output = defaultOutput, test = testName, client = clientName, 'k6-dashboard': k6Dashboard } = options;
 
 if (!input && process.stdin.isTTY) {
-  console.error('Usage: node bin/report.js --input=<json-file> [--output=<html-file>] [--test=<test-name>]');
+  console.error('Usage: node bin/report.js --input=<json-file> [--output=<html-file>] [--test=<test-name>] [--client=<client-name>] [--k6-dashboard=<filename>]');
   console.error('   or: k6 run --out json=- test.js | node bin/report.js [--output=<html-file>] [--test=<test-name>]');
   console.error('');
   console.error('Options:');
-  console.error('  --input   Input JSON file from k6 (optional if piping)');
-  console.error('  --output  Output HTML file (default: reports/<test-name>/<test-name>_<timestamp>.html)');
-  console.error('  --test    Test name for organizing reports (default: extracted from input filename)');
+  console.error('  --input=<file>        Path to k6 JSON output file');
+  console.error('  --output=<file>       Path for generated HTML report (default: reports/{client}/{test}/custom-report-{timestamp}.html)');
+  console.error('  --test=<name>         Test name for the report');
+  console.error('  --client=<name>       Client name for the report');
+  console.error('  --k6-dashboard=<file> Filename of k6 web dashboard HTML (for hyperlinking)');
   console.error('');
   console.error('Examples:');
   console.error('  node bin/report.js --input=output.json');
@@ -213,7 +215,7 @@ function calculateStats(values) {
 /**
  * Generate Enterprise HTML report with charts and detailed breakdowns
  */
-function generateHTML(metrics, checks, testInfo, groupedMetrics, testName, clientName) {
+function generateHTML(metrics, checks, testInfo, groupedMetrics, testName, clientName, k6Dashboard) {
   const checkStats = Object.entries(checks).map(([name, data]) => ({
     name,
     passed: data.passed,
@@ -403,6 +405,27 @@ function generateHTML(metrics, checks, testInfo, groupedMetrics, testName, clien
       font-size: 1.2em;
       font-weight: 700;
       display: block;
+    }
+    .header .k6-dashboard-link {
+      text-align: center;
+      margin-top: 20px;
+    }
+    .dashboard-button {
+      display: inline-block;
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+      padding: 12px 30px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 1em;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .dashboard-button:hover {
+      background: linear-gradient(135deg, #059669, #047857);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
     }
     .header .timestamp {
       display: grid;
@@ -740,6 +763,13 @@ function generateHTML(metrics, checks, testInfo, groupedMetrics, testName, clien
           <span class="info-value">${testName}</span>
         </div>
       </div>
+      ${k6Dashboard ? `
+      <div class="k6-dashboard-link">
+        <a href="./${k6Dashboard}" target="_blank" class="dashboard-button">
+          📊 View k6 Web Dashboard
+        </a>
+      </div>
+      ` : ''}
       <div class="timestamp">
         <div class="timestamp-item">
           <span class="label">Start Time</span>
@@ -994,7 +1024,7 @@ async function main() {
       });
   });
 
-  const html = generateHTML(metrics, checks, testInfo, groupedMetrics, test, client);
+  const html = generateHTML(metrics, checks, testInfo, groupedMetrics, test, client, k6Dashboard);
   
   const outputPath = path.resolve(output);
   

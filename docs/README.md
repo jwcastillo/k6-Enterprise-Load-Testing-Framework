@@ -232,7 +232,7 @@ trigger_tests:
 name: Daily Smoke Tests
 on:
   schedule:
-    - cron: '0 6 * * *'  # 6 AM UTC diariamente
+    - cron: '0 6 * * *'  # 6 AM UTC daily
   workflow_dispatch:
 
 jobs:
@@ -247,10 +247,10 @@ jobs:
 
 #### Load Test Pre-Deploy
 ```bash
-# Ejecutar antes de un deploy a producción
+# Execute before a production deployment
 curl -X POST \
   -H "Authorization: Bearer $GITHUB_TOKEN" \
-  https://api.github.com/repos/OWNER/REPO/actions/workflows/ci.yml/dispatches \
+  https://api.github.com/repos/OWNER/REPO/actions/workflows/run-tests.yml/dispatches \
   -d '{
     "ref": "main",
     "inputs": {
@@ -262,13 +262,13 @@ curl -X POST \
   }'
 ```
 
-### Ejecución Config-Driven (Parámetros Dinámicos)
+### Config-Driven Execution (Dynamic Parameters)
 
-Para ejecutar tests con configuración dinámica (path, body, headers, método), usa el test `config-driven.ts` con un archivo de configuración personalizado:
+To execute tests with dynamic configuration (path, body, headers, method), use the `config-driven.ts` test with a custom configuration file:
 
-#### Opción 1: Archivo de Configuración en el Repositorio
+#### Option 1: Configuration File in Repository
 
-**1. Crear archivo de configuración** (ej: `configs/api-test.json`):
+**1. Create configuration file** (e.g., `configs/api-test.json`):
 ```json
 {
   "baseUrl": "https://api.example.com",
@@ -342,7 +342,7 @@ Para ejecutar tests con configuración dinámica (path, body, headers, método),
 }
 ```
 
-**2. Ejecutar desde GitHub Actions:**
+**2. Execute from GitHub Actions:**
 ```yaml
 # .github/workflows/api-test.yml
 name: API Config-Driven Test
@@ -383,7 +383,7 @@ jobs:
             --config=${{ github.event.inputs.config_file }}
 ```
 
-**3. Ejecutar via API:**
+**3. Execute via API:**
 ```bash
 curl -X POST \
   -H "Authorization: Bearer $GITHUB_TOKEN" \
@@ -397,9 +397,9 @@ curl -X POST \
   }'
 ```
 
-#### Opción 2: Configuración desde Variable de Entorno (JSON inline)
+#### Option 2: Configuration from Environment Variable (Inline JSON)
 
-**1. GitHub Actions con JSON inline:**
+**1. GitHub Actions with inline JSON:**
 ```yaml
 name: Dynamic API Test
 
@@ -430,17 +430,17 @@ jobs:
       - uses: actions/checkout@v3
       - name: Setup and Run Test
         run: |
-          # Crear archivo temporal con la configuración
+          # Create temporary file with configuration
           echo '${{ github.event.inputs.test_config }}' > /tmp/test-config.json
           
-          # Ejecutar test
+          # Execute test
           node dist/core/cli.js \
             --client=local \
             --test=config-driven.ts \
             --config=/tmp/test-config.json
 ```
 
-**2. GitLab CI con JSON inline:**
+**2. GitLab CI with inline JSON:**
 ```yaml
 # .gitlab-ci.yml
 dynamic_api_test:
@@ -468,9 +468,9 @@ dynamic_api_test:
     - web
 ```
 
-**3. Ejecutar GitLab pipeline con configuración custom via API:**
+**3. Execute GitLab pipeline with custom configuration via API:**
 ```bash
-# Crear configuración JSON
+# Create JSON configuration
 CONFIG_JSON=$(cat <<EOF
 {
   "baseUrl": "https://api.staging.example.com",
@@ -500,7 +500,7 @@ CONFIG_JSON=$(cat <<EOF
 EOF
 )
 
-# Ejecutar pipeline
+# Execute pipeline
 curl -X POST \
   -H "PRIVATE-TOKEN: $GITLAB_TOKEN" \
   "https://gitlab.com/api/v4/projects/PROJECT_ID/pipeline" \
@@ -508,7 +508,7 @@ curl -X POST \
   -d "variables[TEST_CONFIG]=$CONFIG_JSON"
 ```
 
-#### Ejemplo Completo: Test de API con Múltiples Métodos
+#### Complete Example: API Test with Multiple Methods
 
 ```json
 {
@@ -604,14 +604,14 @@ curl -X POST \
 }
 ```
 
-**Ventajas del Enfoque Config-Driven:**
-- ✅ No requiere escribir código TypeScript
-- ✅ Configuración completamente dinámica desde el pipeline
-- ✅ Soporte para todos los métodos HTTP (GET, POST, PUT, PATCH, DELETE)
-- ✅ Headers y body personalizables
-- ✅ Checks dinámicos con JavaScript
-- ✅ Variables de entorno (`${__ENV.VAR_NAME}`)
-- ✅ Fácil integración con CI/CD
+**Config-Driven Approach Advantages:**
+- ✅ No need to write TypeScript code
+- ✅ Fully dynamic configuration from pipeline
+- ✅ Support for all HTTP methods (GET, POST, PUT, PATCH, DELETE)
+- ✅ Customizable headers and body
+- ✅ Dynamic checks with JavaScript
+- ✅ Environment variables (`${__ENV.VAR_NAME}`)
+- ✅ Easy CI/CD integration
 
 ## 📊 HTML Reports
 

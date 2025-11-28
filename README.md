@@ -23,7 +23,8 @@ node dist/core/cli.js --client=local --test=example.ts
 
 - **[README](docs/README.md)** - Complete framework documentation
 - **[Test Types Guide](docs/TEST_TYPES.md)** - Unit, Flow, Browser, and Mixed tests (Spanish)
-- **[Redis Integration](docs/REDIS.md)** - Redis helper and data management (Spanish)
+- **[Redis Integration Guide](docs/REDIS.md)** - Using Redis for data management
+- **[Extensions & Instrumentation](docs/EXTENSIONS.md)** - Tracing (Tempo), Profiling (Pyroscope), and xk6 extensions (Spanish)
 - **[Contributing Guide](docs/CONTRIBUTING.md)** - How to contribute to the project
 - **[Tasks & Roadmap](docs/TASKS.md)** - Project tasks and future plans
 

@@ -1,4 +1,8 @@
 import http, { RefinedParams, RefinedResponse } from 'k6/http';
+// @ts-ignore
+import { HttpInstrumentation as TempoInstrumentation } from 'https://jslib.k6.io/http-instrumentation-tempo/1.0.0/index.js';
+// @ts-ignore
+import { HttpInstrumentation as PyroscopeInstrumentation } from 'https://jslib.k6.io/http-instrumentation-pyroscope/1.0.0/index.js';
 
 /**
  * RequestHelper - Utility for building and executing HTTP requests
@@ -6,6 +10,7 @@ import http, { RefinedParams, RefinedResponse } from 'k6/http';
 export class RequestHelper {
   private baseUrl: string;
   private defaultHeaders: Record<string, string>;
+  private httpClient: any;
 
   constructor(baseUrl: string, defaultHeaders: Record<string, string> = {}) {
     this.baseUrl = baseUrl;
@@ -13,6 +18,33 @@ export class RequestHelper {
       'Content-Type': 'application/json',
       ...defaultHeaders
     };
+
+    // Initialize HTTP client with default k6 http
+    this.httpClient = http;
+
+    // Apply Tempo Tracing if enabled
+    if (__ENV.K6_TEMPO_ENABLED === 'true') {
+      console.log('✨ Enabling Tempo Tracing instrumentation');
+      try {
+        const tempo = new TempoInstrumentation(this.httpClient, {
+          propagation: __ENV.K6_TEMPO_PROPAGATION || 'w3c',
+        });
+        this.httpClient = tempo.client;
+      } catch (e) {
+        console.warn('Failed to initialize Tempo instrumentation:', e);
+      }
+    }
+
+    // Apply Pyroscope Profiling if enabled
+    if (__ENV.K6_PYROSCOPE_ENABLED === 'true') {
+      console.log('🔥 Enabling Pyroscope Profiling instrumentation');
+      try {
+        const pyroscope = new PyroscopeInstrumentation(this.httpClient);
+        this.httpClient = pyroscope.client;
+      } catch (e) {
+        console.warn('Failed to initialize Pyroscope instrumentation:', e);
+      }
+    }
   }
 
   /**
@@ -56,7 +88,7 @@ export class RequestHelper {
    */
   public get(path: string, params?: Record<string, string>, headers?: Record<string, string>): RefinedResponse<any> {
     const url = this.buildUrl(path, params);
-    return http.get(url, this.buildParams({ headers: this.buildHeaders(headers) }));
+    return this.httpClient.get(url, this.buildParams({ headers: this.buildHeaders(headers) }));
   }
 
   /**
@@ -65,7 +97,7 @@ export class RequestHelper {
   public post(path: string, body: any, headers?: Record<string, string>): RefinedResponse<any> {
     const url = this.buildUrl(path);
     const payload = typeof body === 'string' ? body : JSON.stringify(body);
-    return http.post(url, payload, this.buildParams({ headers: this.buildHeaders(headers) }));
+    return this.httpClient.post(url, payload, this.buildParams({ headers: this.buildHeaders(headers) }));
   }
 
   /**
@@ -74,7 +106,7 @@ export class RequestHelper {
   public put(path: string, body: any, headers?: Record<string, string>): RefinedResponse<any> {
     const url = this.buildUrl(path);
     const payload = typeof body === 'string' ? body : JSON.stringify(body);
-    return http.put(url, payload, this.buildParams({ headers: this.buildHeaders(headers) }));
+    return this.httpClient.put(url, payload, this.buildParams({ headers: this.buildHeaders(headers) }));
   }
 
   /**
@@ -83,7 +115,7 @@ export class RequestHelper {
   public patch(path: string, body: any, headers?: Record<string, string>): RefinedResponse<any> {
     const url = this.buildUrl(path);
     const payload = typeof body === 'string' ? body : JSON.stringify(body);
-    return http.patch(url, payload, this.buildParams({ headers: this.buildHeaders(headers) }));
+    return this.httpClient.patch(url, payload, this.buildParams({ headers: this.buildHeaders(headers) }));
   }
 
   /**
@@ -91,7 +123,7 @@ export class RequestHelper {
    */
   public del(path: string, headers?: Record<string, string>): RefinedResponse<any> {
     const url = this.buildUrl(path);
-    return http.del(url, null, this.buildParams({ headers: this.buildHeaders(headers) }));
+    return this.httpClient.del(url, null, this.buildParams({ headers: this.buildHeaders(headers) }));
   }
 
   /**

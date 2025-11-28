@@ -33,14 +33,25 @@ const timestamp = now.toISOString().replace(/[:.]/g, '-').replace('T', '_').spli
 
 // Extract test name from input file if not provided
 let testName = options.test || 'test';
+let clientName = 'unknown';
+
 if (options.input && !options.test) {
   const basename = path.basename(options.input, '.json');
   testName = basename.replace(/_output$/, '').replace(/_/g, '-');
 }
 
+// Try to extract client name from input path (e.g., clients/local/...)
+if (options.input) {
+  const inputPath = path.resolve(options.input);
+  const clientMatch = inputPath.match(/clients\/([^\/]+)/);
+  if (clientMatch) {
+    clientName = clientMatch[1];
+  }
+}
+
 // Default output: reports/<test-name>/<test-name>_<timestamp>.html
 const defaultOutput = path.join('reports', testName, `${testName}_${timestamp}.html`);
-const { input, output = defaultOutput, test = testName } = options;
+const { input, output = defaultOutput, test = testName, client = clientName } = options;
 
 if (!input && process.stdin.isTTY) {
   console.error('Usage: node bin/report.js --input=<json-file> [--output=<html-file>] [--test=<test-name>]');
@@ -202,7 +213,7 @@ function calculateStats(values) {
 /**
  * Generate Enterprise HTML report with charts and detailed breakdowns
  */
-function generateHTML(metrics, checks, testInfo, groupedMetrics) {
+function generateHTML(metrics, checks, testInfo, groupedMetrics, testName, clientName) {
   const checkStats = Object.entries(checks).map(([name, data]) => ({
     name,
     passed: data.passed,
@@ -360,7 +371,39 @@ function generateHTML(metrics, checks, testInfo, groupedMetrics) {
       text-align: center;
     }
     .header h1 { font-size: 2.5em; margin-bottom: 10px; }
-    .header .subtitle { opacity: 0.9; font-size: 1.1em; margin-bottom: 20px; }
+    .header .subtitle { 
+      opacity: 0.95; 
+      font-size: 1.2em; 
+      margin-bottom: 30px;
+      font-weight: 300;
+    }
+    .header .test-info {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      margin-bottom: 20px;
+      padding: 20px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 12px;
+      backdrop-filter: blur(10px);
+    }
+    .header .info-item {
+      text-align: center;
+    }
+    .header .info-label {
+      font-size: 0.85em;
+      opacity: 0.8;
+      display: block;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 600;
+    }
+    .header .info-value {
+      font-size: 1.2em;
+      font-weight: 700;
+      display: block;
+    }
     .header .timestamp {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -686,7 +729,17 @@ function generateHTML(metrics, checks, testInfo, groupedMetrics) {
   <div class="container">
     <div class="header">
       <h1>🚀 k6 Enterprise Test Report</h1>
-      <p class="subtitle">Performance Testing Results</p>
+      <p class="subtitle">Performance Testing & Quality Analysis</p>
+      <div class="test-info">
+        <div class="info-item">
+          <span class="info-label">Client:</span>
+          <span class="info-value">${clientName}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Test:</span>
+          <span class="info-value">${testName}</span>
+        </div>
+      </div>
       <div class="timestamp">
         <div class="timestamp-item">
           <span class="label">Start Time</span>
@@ -941,7 +994,7 @@ async function main() {
       });
   });
 
-  const html = generateHTML(metrics, checks, testInfo, groupedMetrics);
+  const html = generateHTML(metrics, checks, testInfo, groupedMetrics, test, client);
   
   const outputPath = path.resolve(output);
   

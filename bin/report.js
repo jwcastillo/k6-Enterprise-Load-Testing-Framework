@@ -99,12 +99,26 @@ function parseK6Output(jsonLines) {
             displayName: keyMetrics[metric] || metric
           };
         }
-        
-        metrics[metric].values.push(metricData.value);
       }
       
       if (data.type === 'Point') {
         const { metric, data: pointData } = data;
+        
+        // Initialize metric if not exists (sometimes Points come before Metric defs or for custom metrics)
+        if (!metrics[metric]) {
+           metrics[metric] = {
+            type: 'trend', // default assumption
+            values: [],
+            tags: {},
+            displayName: keyMetrics[metric] || metric
+          };
+        }
+
+        // Add value to metric
+        // Only add if it's a number (checks are handled separately below, but they are also metrics)
+        if (typeof pointData.value === 'number') {
+             metrics[metric].values.push(pointData.value);
+        }
         
         // Track checks
         if (metric === 'checks') {

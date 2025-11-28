@@ -9,19 +9,12 @@ import { HttpInstrumentation as PyroscopeInstrumentation } from 'https://jslib.k
  */
 export class RequestHelper {
   private baseUrl: string;
-  private defaultHeaders: Record<string, string>;
-  private httpClient: any;
+  private headers: { [key: string]: string };
 
-  constructor(baseUrl: string, defaultHeaders: Record<string, string> = {}) {
+  constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
-    this.defaultHeaders = {
+    this.headers = {
       'Content-Type': 'application/json',
-      ...defaultHeaders
-    };
-
-    // Initialize HTTP client with default k6 http
-    this.httpClient = http;
-
     // Apply Tempo Tracing if enabled
     if (__ENV.K6_TEMPO_ENABLED === 'true') {
       console.log('✨ Enabling Tempo Tracing instrumentation');
@@ -43,6 +36,30 @@ export class RequestHelper {
         this.httpClient = pyroscope.client;
       } catch (e) {
         console.warn('Failed to initialize Pyroscope instrumentation:', e);
+      }
+    }
+  }
+
+  /**
+   * Log debug information if K6_DEBUG is enabled
+   */
+  private logDebug(method: string, url: string, params?: any, response?: RefinedResponse<any>): void {
+    if (__ENV.K6_DEBUG === 'true') {
+      console.log(`\n🔍 [DEBUG] ${method} ${url}`);
+      if (params) {
+        console.log('   Request Headers:', JSON.stringify(params.headers || {}));
+        if (params.body) console.log('   Request Body:', params.body);
+      }
+      
+      if (response) {
+        console.log(`   Response Status: ${response.status}`);
+        console.log('   Response Headers:', JSON.stringify(response.headers || {}));
+        // Only log body if it's text/json and not too large
+        if (response.body && typeof response.body === 'string' && response.body.length < 2000) {
+          console.log('   Response Body:', response.body);
+        } else if (response.body) {
+          console.log('   Response Body: [Binary or too large]');
+        }
       }
     }
   }
@@ -88,7 +105,11 @@ export class RequestHelper {
    */
   public get(path: string, params?: Record<string, string>, headers?: Record<string, string>): RefinedResponse<any> {
     const url = this.buildUrl(path, params);
-    return this.httpClient.get(url, this.buildParams({ headers: this.buildHeaders(headers) }));
+    const requestParams = this.buildParams({ headers: this.buildHeaders(headers) });
+    this.logDebug('GET', url, requestParams);
+    const response = this.httpClient.get(url, requestParams);
+    this.logDebug('GET', url, null, response);
+    return response;
   }
 
   /**
@@ -97,7 +118,11 @@ export class RequestHelper {
   public post(path: string, body: any, headers?: Record<string, string>): RefinedResponse<any> {
     const url = this.buildUrl(path);
     const payload = typeof body === 'string' ? body : JSON.stringify(body);
-    return this.httpClient.post(url, payload, this.buildParams({ headers: this.buildHeaders(headers) }));
+    const requestParams = this.buildParams({ headers: this.buildHeaders(headers) });
+    this.logDebug('POST', url, { ...requestParams, body: payload });
+    const response = this.httpClient.post(url, payload, requestParams);
+    this.logDebug('POST', url, null, response);
+    return response;
   }
 
   /**
@@ -106,7 +131,11 @@ export class RequestHelper {
   public put(path: string, body: any, headers?: Record<string, string>): RefinedResponse<any> {
     const url = this.buildUrl(path);
     const payload = typeof body === 'string' ? body : JSON.stringify(body);
-    return this.httpClient.put(url, payload, this.buildParams({ headers: this.buildHeaders(headers) }));
+    const requestParams = this.buildParams({ headers: this.buildHeaders(headers) });
+    this.logDebug('PUT', url, { ...requestParams, body: payload });
+    const response = this.httpClient.put(url, payload, requestParams);
+    this.logDebug('PUT', url, null, response);
+    return response;
   }
 
   /**
@@ -115,7 +144,11 @@ export class RequestHelper {
   public patch(path: string, body: any, headers?: Record<string, string>): RefinedResponse<any> {
     const url = this.buildUrl(path);
     const payload = typeof body === 'string' ? body : JSON.stringify(body);
-    return this.httpClient.patch(url, payload, this.buildParams({ headers: this.buildHeaders(headers) }));
+    const requestParams = this.buildParams({ headers: this.buildHeaders(headers) });
+    this.logDebug('PATCH', url, { ...requestParams, body: payload });
+    const response = this.httpClient.patch(url, payload, requestParams);
+    this.logDebug('PATCH', url, null, response);
+    return response;
   }
 
   /**
@@ -123,7 +156,11 @@ export class RequestHelper {
    */
   public del(path: string, headers?: Record<string, string>): RefinedResponse<any> {
     const url = this.buildUrl(path);
-    return this.httpClient.del(url, null, this.buildParams({ headers: this.buildHeaders(headers) }));
+    const requestParams = this.buildParams({ headers: this.buildHeaders(headers) });
+    this.logDebug('DELETE', url, requestParams);
+    const response = this.httpClient.del(url, null, requestParams);
+    this.logDebug('DELETE', url, null, response);
+    return response;
   }
 
   /**

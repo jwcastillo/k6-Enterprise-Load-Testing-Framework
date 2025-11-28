@@ -20,7 +20,8 @@
     "security:audit": "npm audit --audit-level=moderate",
     "security:fix": "npm audit fix",
     "mock": "node bin/mock-server.js",
-    "test:parallel": "node bin/run-parallel.js"
+    "test:parallel": "node bin/run-parallel.js",
+    "generate": "node bin/generate.js"
   },
   "keywords": [
     "k6",
@@ -50,11 +51,13 @@
     "@types/k6": "^0.54.0",
     "@types/node": "^20.0.0",
     "body-parser": "^2.2.1",
+    "chalk": "^5.3.0",
     "commitizen": "^4.3.0",
     "cors": "^2.8.5",
     "cz-conventional-changelog": "^3.3.0",
     "express": "^5.1.0",
     "husky": "^8.0.0",
+    "inquirer": "^9.2.12",
     "k6": "^0.0.0",
     "lint-staged": "^15.0.0",
     "typescript": "^5.0.0"

@@ -1,0 +1,18 @@
+import { BaseFactory } from './BaseFactory.js';
+import { DataHelper } from '../helpers/DataHelper.js';
+
+export interface {{ModelName}} {
+  id: string;
+  name: string;
+  createdAt: string;
+}
+
+export class {{FactoryName}} extends BaseFactory<{{ModelName}}> {
+  protected definition(): {{ModelName}} {
+    return {
+      id: DataHelper.uuid(),
+      name: DataHelper.randomString(10),
+      createdAt: new Date().toISOString()
+    };
+  }
+}

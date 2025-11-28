@@ -49,6 +49,32 @@ jobs:
           name: dist
           path: dist/
 
+  security:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18.x"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+
+      - name: Check for secrets
+        run: |
+          echo "🔍 Scanning for hardcoded secrets..."
+          ! git grep -E "password\s*=\s*['\"][^'\"]+['\"]" -- ':!*.md' ':!SECURITY.md' || (echo "❌ Found hardcoded passwords" && exit 1)
+          ! git grep -E "api[_-]?key\s*=\s*['\"][^'\"]+['\"]" -- ':!*.md' ':!SECURITY.md' || (echo "❌ Found hardcoded API keys" && exit 1)
+          echo "✅ No secrets detected"
+
   test:
     needs: build
     runs-on: ubuntu-latest

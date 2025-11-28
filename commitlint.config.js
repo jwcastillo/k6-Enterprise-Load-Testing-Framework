@@ -7,19 +7,19 @@ module.exports = {
       [
         'feat',     // New feature
         'fix',      // Bug fix
-        'docs',     // Documentation only changes
-        'style',    // Code style changes (formatting, missing semi-colons, etc)
+        'docs',     // Documentation changes
+        'style',    // Code style changes (formatting, etc.)
         'refactor', // Code refactoring
         'perf',     // Performance improvements
         'test',     // Adding or updating tests
-        'build',    // Changes to build system or dependencies
-        'ci',       // Changes to CI configuration
-        'chore',    // Other changes that don't modify src or test files
+        'chore',    // Maintenance tasks
+        'ci',       // CI/CD changes
+        'build',    // Build system changes
         'revert'    // Revert a previous commit
       ]
     ],
     'scope-case': [2, 'always', 'lower-case'],
-    'subject-case': [0], // Allow any case for subject
+    'subject-case': [0],
     'subject-empty': [2, 'never'],
     'subject-full-stop': [2, 'never', '.'],
     'header-max-length': [2, 'always', 100]

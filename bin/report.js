@@ -71,6 +71,7 @@ function parseK6Output(jsonLines) {
     vus: 0,
     iterations: 0
   };
+  const groupedMetrics = {};
 
   // Key metrics we want to track
   const keyMetrics = {
@@ -120,6 +121,25 @@ function parseK6Output(jsonLines) {
              metrics[metric].values.push(pointData.value);
         }
         
+        const tags = pointData.tags || {};
+        const group = tags.group || '';
+        const name = tags.name || tags.url || 'unknown';
+
+        // Grouped Metrics Logic
+        // We only care about HTTP metrics for grouping usually
+        if (metric.startsWith('http_req')) {
+            if (!groupedMetrics[group]) groupedMetrics[group] = {};
+            if (!groupedMetrics[group][name]) groupedMetrics[group][name] = {};
+            if (!groupedMetrics[group][name][metric]) {
+                groupedMetrics[group][name][metric] = {
+                    values: []
+                };
+            }
+            if (typeof pointData.value === 'number') {
+                groupedMetrics[group][name][metric].values.push(pointData.value);
+            }
+        }
+        
         // Track checks
         if (metric === 'checks') {
           const checkName = pointData.tags?.check || 'unknown';
@@ -156,7 +176,7 @@ function parseK6Output(jsonLines) {
     testInfo.duration = new Date(testInfo.endTime) - new Date(testInfo.startTime);
   }
 
-  return { metrics, checks, testInfo };
+  return { metrics, checks, testInfo, groupedMetrics };
 }
 
 /**
@@ -482,10 +502,30 @@ async function main() {
   const lines = jsonData.trim().split('\n').filter(line => line.trim());
   console.log(`🔍 Parsing ${lines.length} JSON lines...`);
 
-  const { metrics, checks, testInfo } = parseK6Output(lines);
+  const { metrics, checks, testInfo, groupedMetrics } = parseK6Output(lines);
   
   console.log(`📊 Found ${Object.keys(metrics).length} metrics`);
   console.log(`✅ Found ${Object.keys(checks).length} checks`);
+
+  // Calculate stats for all metrics
+  const fullMetrics = {};
+  Object.keys(metrics).forEach(name => {
+      if (!name.startsWith('data_')) {
+          fullMetrics[name] = calculateStats(metrics[name].values);
+      }
+  });
+
+  // Calculate stats for grouped metrics
+  const fullGroupedMetrics = {};
+  Object.keys(groupedMetrics).forEach(group => {
+      fullGroupedMetrics[group] = {};
+      Object.keys(groupedMetrics[group]).forEach(name => {
+          fullGroupedMetrics[group][name] = {};
+          Object.keys(groupedMetrics[group][name]).forEach(metric => {
+              fullGroupedMetrics[group][name][metric] = calculateStats(groupedMetrics[group][name][metric].values);
+          });
+      });
+  });
 
   const html = generateHTML(metrics, checks, testInfo);
   
@@ -497,18 +537,28 @@ async function main() {
   // Write HTML report
   await fs.writeFile(outputPath, html);
   
-  // Create metadata file
+  // Create enriched metadata file
   const metadataPath = outputPath.replace('.html', '_metadata.json');
   const metadata = {
-    testName: test,
-    timestamp: now.toISOString(),
-    reportFile: path.basename(outputPath),
-    inputFile: input || 'stdin',
-    totalChecks: Object.values(checks).reduce((sum, c) => sum + c.passed + c.failed, 0),
-    passedChecks: Object.values(checks).reduce((sum, c) => sum + c.passed, 0),
-    failedChecks: Object.values(checks).reduce((sum, c) => sum + c.failed, 0),
-    duration: testInfo.duration,
-    metricsCount: Object.keys(metrics).length
+    testInfo: {
+        name: test,
+        timestamp: now.toISOString(),
+        duration: testInfo.duration,
+        vus: testInfo.vus,
+        iterations: testInfo.iterations
+    },
+    files: {
+        report: path.basename(outputPath),
+        input: input || 'stdin'
+    },
+    summary: {
+        totalChecks: Object.values(checks).reduce((sum, c) => sum + c.passed + c.failed, 0),
+        passedChecks: Object.values(checks).reduce((sum, c) => sum + c.passed, 0),
+        failedChecks: Object.values(checks).reduce((sum, c) => sum + c.failed, 0),
+    },
+    checks: checks,
+    metrics: fullMetrics,
+    groupedMetrics: fullGroupedMetrics
   };
   
   await fs.writeJson(metadataPath, metadata, { spaces: 2 });
@@ -516,12 +566,12 @@ async function main() {
   console.log('');
   console.log('✅ Report generated successfully!');
   console.log(`📁 Report: ${outputPath}`);
-  console.log(`� Metadata: ${metadataPath}`);
+  console.log(`📄 Metadata: ${metadataPath}`);
   console.log(`🌐 Open in browser: file://${outputPath}`);
   console.log('');
   console.log(`📊 Summary:`);
   console.log(`   Test: ${test}`);
-  console.log(`   Checks: ${metadata.passedChecks}/${metadata.totalChecks} passed`);
+  console.log(`   Checks: ${metadata.summary.passedChecks}/${metadata.summary.totalChecks} passed`);
   console.log(`   Duration: ${(testInfo.duration / 1000).toFixed(2)}s`);
 }
 

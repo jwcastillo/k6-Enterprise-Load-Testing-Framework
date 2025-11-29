@@ -21,7 +21,9 @@
     "security:fix": "npm audit fix",
     "mock": "node bin/mock-server.js",
     "test:parallel": "node bin/run-parallel.js",
-    "generate": "node bin/generate.js"
+    "generate": "node bin/generate.js",
+    "notify": "node bin/notify.js",
+    "trend-analysis": "node bin/trend-analysis.js"
   },
   "keywords": [
     "k6",

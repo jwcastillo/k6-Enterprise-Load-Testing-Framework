@@ -1,0 +1,53 @@
+groups:
+  - name: k6_alerts
+    interval: 30s
+    rules:
+      - alert: HighErrorRate
+        expr: (sum(rate(k6_http_req_failed[1m])) / sum(rate(k6_http_reqs[1m]))) * 100 > 5
+        for: 2m
+        labels:
+          severity: critical
+          component: k6
+        annotations:
+          summary: "High error rate detected in k6 load test"
+          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+
+      - alert: SlowResponseTime
+        expr: k6_http_req_duration{quantile="0.95"} > 500
+        for: 2m
+        labels:
+          severity: warning
+          component: k6
+        annotations:
+          summary: "Slow response time detected"
+          description: "p95 response time is {{ $value }}ms (threshold: 500ms)"
+
+      - alert: ThresholdViolation
+        expr: k6_checks{result="fail"} > 0
+        for: 1m
+        labels:
+          severity: warning
+          component: k6
+        annotations:
+          summary: "k6 threshold violation detected"
+          description: "Check '{{ $labels.name }}' is failing"
+
+      - alert: VerySlowResponseTime
+        expr: k6_http_req_duration{quantile="0.99"} > 1000
+        for: 2m
+        labels:
+          severity: critical
+          component: k6
+        annotations:
+          summary: "Very slow response time detected"
+          description: "p99 response time is {{ $value }}ms (threshold: 1000ms)"
+
+      - alert: LowThroughput
+        expr: rate(k6_http_reqs[1m]) < 10
+        for: 3m
+        labels:
+          severity: warning
+          component: k6
+        annotations:
+          summary: "Low throughput detected"
+          description: "Current throughput is {{ $value | humanize }} req/s (threshold: 10 req/s)"

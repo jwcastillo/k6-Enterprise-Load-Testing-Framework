@@ -101,89 +101,73 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Security**: Dependency scanning with Dependabot and Renovate
 - Documentation: `docs/RUNNING_TESTS.md`, `docs/CLIENT_MANAGEMENT.md`, `docs/COMMIT_GUIDELINES.md`, `SECURITY.md`
 
+- **Advanced Reporting & Dashboards**
+  - k6 web dashboard integration (159KB interactive HTML)
+  - Enterprise Report with custom HTML generation
+  - Browser Screenshots gallery in reports
+  - Execution logs capture (`.log` files)
+  - Summary extraction (`.txt` files)
+  - Report organization: `reports/{client}/{test}/` structure
+  - Links between all report artifacts (Dashboard, Log, Summary)
+
+- **CI/CD Integration**
+  - GitHub Actions workflow with test execution
+  - GitLab CI pipeline configuration
+  - Beautiful console test summaries (`bin/test-summary.sh`)
+  - Automatic artifact upload (reports + screenshots)
+  - 30-day artifact retention
+  - Fun status messages based on test results
+
+- **Observability & Debugging**
+  - `K6_DEBUG` mode for verbose request/response logging
+  - Tempo Tracing integration (`K6_TEMPO_ENABLED`)
+  - Pyroscope Profiling integration (`K6_PYROSCOPE_ENABLED`)
+  - Automatic trace propagation via `RequestHelper`
+  - Extensions documentation (`docs/EXTENSIONS.md`)
+
+- **k6 Configuration Enhancements**
+  - Summary mode configuration (default: 'full')
+  - Custom trend stats (min, avg, med, max, p90, p95, p99, p99.9)
+  - Time unit configuration (default: milliseconds)
+  - Metrics backends support:
+    - Prometheus (experimental-prometheus-rw)
+    - Datadog
+    - New Relic
+    - Dynatrace
+    - InfluxDB
+  - Environment variable overrides for all k6 options
+
+- **Browser Testing**
+  - `K6_REPORT_DIR` environment injection
+  - Automatic screenshot capture and display
+  - Browser test example (`browser-screenshot-test.ts`)
+  - Screenshot gallery in Enterprise Report
+
+- **Bin Scripts**
+  - `bin/test-summary.sh` - Formatted test result summaries
+  - Enhanced `bin/report.js` with multiple output formats
+
+- **Documentation**
+  - `docs/EXTENSIONS.md` - Extensions and instrumentation guide
+  - Updated `docs/README.md` with debugging section
+  - Comprehensive CI/CD execution examples
+
 ### Changed
 - Renamed `commitlint.config.js` to `commitlint.config.cjs` for Node.js compatibility
 - Split CI/CD into validation and execution pipelines
+- Renamed "custom report" to "Enterprise Report"
+- Modified runner to use `spawn` instead of `exec` for better shell escaping
+- Updated `RequestHelper` to support instrumentation libraries
+- Enhanced report structure with organized artifact links
 
+### Fixed
+- Shell escaping issues with k6 arguments containing parentheses
+- Summary extraction to capture only relevant section (not full output)
+  
 ### Dependencies
 - Added `commitizen`, `cz-conventional-changelog`
 - Added `@commitlint/cli`, `@commitlint/config-conventional`
 - Added `husky`, `lint-staged`
-
-## [1.1.0] - 2025-11-28
-
-### Planned
-- Additional client examples
-- Performance monitoring dashboards
-- NPM package publication
-
-## [1.0.0] - 2025-11-26
-
-### Added
-- **Core Framework**
-  - CLI runner with client/environment/test selection
-  - Configuration loader with hierarchical merging
-  - Base service class for Service Object Model pattern
-  - TypeScript support with ES modules
-
-- **Multi-Client Architecture**
-  - Strict client isolation (config, data, lib, scenarios)
-  - Client-specific directory structure
-  - Independent test execution per client
-
-- **Test Types**
-  - Unit tests for individual API endpoints
-  - Flow tests for multi-step scenarios
-  - Browser tests using k6 browser module
-  - Mixed tests combining API and Browser
-
-- **Service Objects**
-  - BaseService class
-  - ExampleService for API testing
-  - AuthService for authentication flows
-
-- **Redis Integration**
-  - RedisHelper utility with full CRUD operations
-  - Hash, List, and Counter support
-  - CSV and JSON data loading examples
-  - Setup/Load/Teardown pattern examples
-
-- **Docker Support**
-  - Dockerfile for containerized execution
-  - docker-compose.yml with Redis service
-  - Health checks and service dependencies
-  - Environment variable configuration
-
-- **Configuration**
-  - Multiple environment support (default, staging, prod)
-  - JSON-based configuration files
-  - Environment variable overrides
-  - Advanced k6 scenarios and thresholds
-
-- **Documentation**
-  - Comprehensive README
-  - Test types guide (TEST_TYPES.md)
-  - Redis integration guide (REDIS.md)
-  - Example scenarios and data files
-
-- **Example Client (client-a)**
-  - Sample configurations for 3 environments
-  - CSV data (users.csv)
-  - JSON data (products.json)
-  - 6 example scenarios:
-    - example.ts (unit test)
-    - auth-flow.ts (flow test)
-    - browser-test.ts (browser test)
-    - mixed-test.ts (API + browser)
-    - redis-test.ts (Redis basics)
-    - redis-data-loader.ts (CSV/JSON loading)
-
-### Infrastructure
-- Git repository initialization
-- .gitignore for node_modules, dist, screenshots
-- .dockerignore for optimized builds
-- .env.example for environment variables
-- TypeScript configuration with path aliases
 
 ## [1.1.0] - 2025-11-27
 
@@ -278,66 +262,70 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - ValidationHelper: 10/10 checks ✅
   - DateHelper: 10/10 checks ✅
 
-## [1.2.0] - 2025-11-28
+## [1.0.0] - 2025-11-26
 
 ### Added
-- **Advanced Reporting & Dashboards**
-  - k6 web dashboard integration (159KB interactive HTML)
-  - Enterprise Report with custom HTML generation
-  - Browser Screenshots gallery in reports
-  - Execution logs capture (`.log` files)
-  - Summary extraction (`.txt` files)
-  - Report organization: `reports/{client}/{test}/` structure
-  - Links between all report artifacts (Dashboard, Log, Summary)
+- **Core Framework**
+  - CLI runner with client/environment/test selection
+  - Configuration loader with hierarchical merging
+  - Base service class for Service Object Model pattern
+  - TypeScript support with ES modules
 
-- **CI/CD Integration**
-  - GitHub Actions workflow with test execution
-  - GitLab CI pipeline configuration
-  - Beautiful console test summaries (`bin/test-summary.sh`)
-  - Automatic artifact upload (reports + screenshots)
-  - 30-day artifact retention
-  - Fun status messages based on test results
+- **Multi-Client Architecture**
+  - Strict client isolation (config, data, lib, scenarios)
+  - Client-specific directory structure
+  - Independent test execution per client
 
-- **Observability & Debugging**
-  - `K6_DEBUG` mode for verbose request/response logging
-  - Tempo Tracing integration (`K6_TEMPO_ENABLED`)
-  - Pyroscope Profiling integration (`K6_PYROSCOPE_ENABLED`)
-  - Automatic trace propagation via `RequestHelper`
-  - Extensions documentation (`docs/EXTENSIONS.md`)
+- **Test Types**
+  - Unit tests for individual API endpoints
+  - Flow tests for multi-step scenarios
+  - Browser tests using k6 browser module
+  - Mixed tests combining API and Browser
 
-- **k6 Configuration Enhancements**
-  - Summary mode configuration (default: 'full')
-  - Custom trend stats (min, avg, med, max, p90, p95, p99, p99.9)
-  - Time unit configuration (default: milliseconds)
-  - Metrics backends support:
-    - Prometheus (experimental-prometheus-rw)
-    - Datadog
-    - New Relic
-    - Dynatrace
-    - InfluxDB
-  - Environment variable overrides for all k6 options
+- **Service Objects**
+  - BaseService class
+  - ExampleService for API testing
+  - AuthService for authentication flows
 
-- **Browser Testing**
-  - `K6_REPORT_DIR` environment injection
-  - Automatic screenshot capture and display
-  - Browser test example (`browser-screenshot-test.ts`)
-  - Screenshot gallery in Enterprise Report
+- **Redis Integration**
+  - RedisHelper utility with full CRUD operations
+  - Hash, List, and Counter support
+  - CSV and JSON data loading examples
+  - Setup/Load/Teardown pattern examples
 
-- **Bin Scripts**
-  - `bin/test-summary.sh` - Formatted test result summaries
-  - Enhanced `bin/report.js` with multiple output formats
+- **Docker Support**
+  - Dockerfile for containerized execution
+  - docker-compose.yml with Redis service
+  - Health checks and service dependencies
+  - Environment variable configuration
+
+- **Configuration**
+  - Multiple environment support (default, staging, prod)
+  - JSON-based configuration files
+  - Environment variable overrides
+  - Advanced k6 scenarios and thresholds
 
 - **Documentation**
-  - `docs/EXTENSIONS.md` - Extensions and instrumentation guide
-  - Updated `docs/README.md` with debugging section
-  - Comprehensive CI/CD execution examples
+  - Comprehensive README
+  - Test types guide (TEST_TYPES.md)
+  - Redis integration guide (REDIS.md)
+  - Example scenarios and data files
 
-### Changed
-- Renamed "custom report" to "Enterprise Report"
-- Modified runner to use `spawn` instead of `exec` for better shell escaping
-- Updated `RequestHelper` to support instrumentation libraries
-- Enhanced report structure with organized artifact links
+- **Example Client (client-a)**
+  - Sample configurations for 3 environments
+  - CSV data (users.csv)
+  - JSON data (products.json)
+  - 6 example scenarios:
+    - example.ts (unit test)
+    - auth-flow.ts (flow test)
+    - browser-test.ts (browser test)
+    - mixed-test.ts (API + browser)
+    - redis-test.ts (Redis basics)
+    - redis-data-loader.ts (CSV/JSON loading)
 
-### Fixed
-- Shell escaping issues with k6 arguments containing parentheses
-- Summary extraction to capture only relevant section (not full output)
+### Infrastructure
+- Git repository initialization
+- .gitignore for node_modules, dist, screenshots
+- .dockerignore for optimized builds
+- .env.example for environment variables
+- TypeScript configuration with path aliases

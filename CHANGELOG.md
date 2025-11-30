@@ -230,6 +230,91 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Shell escaping issues with k6 arguments containing parentheses
 - Summary extraction to capture only relevant section (not full output)
 
+## [1.8.0] - 2025-11-30
+
+### Added
+- **API Contract Testing**: `ContractValidator` helper for JSON Schema and OpenAPI validation
+- **GraphQL Testing**: `GraphQLHelper` for queries, mutations, and schema introspection
+- **WebSocket Testing**: Example scenario for WebSocket connections and messaging
+- **File Upload/Download**: Scenario for multipart form-data uploads and file downloads
+- **Rate Limiting**: Scenario with adaptive backoff and rate limit detection
+- Example contract schema: `clients/examples/contracts/user-api.schema.json`
+
+### Changed
+- Updated `docs/TASKS.md` to mark Advanced Testing as completed
+
+## [1.7.0] - 2025-11-29
+
+### Added
+- **Custom Grafana Dashboard**: `observability/grafana/k6-dashboard.json` with 5 panels
+- **Prometheus AlertManager Rules**: 5 alert rules for performance monitoring
+- **Grafana-native Alerts**: Alert rules for Grafana 8+
+- **Notification System**: `bin/notify.js` for Slack, Discord, and Email notifications
+- **Trend Analysis**: `bin/trend-analysis.js` for historical test comparison
+- Documentation: `observability/grafana/README.md`, `observability/alerts/README.md`
+
+### Changed
+- Added `notify` and `trend-analysis` scripts to `package.json`
+- Updated `docs/TASKS.md` to mark Observability as completed
+
+## [1.6.0] - 2025-11-29
+
+### Added
+- **Docker Publishing**: CI/CD job to publish images to GHCR on tag push
+- **Helm Chart**: `charts/k6-enterprise/` for Kubernetes deployment
+- **Distributed Testing**: k6-operator integration and documentation
+- Documentation: `docs/DISTRIBUTED_TESTING.md`
+- Example CRD: `k6-operator/example-crd.yaml`
+
+### Changed
+- Fixed syntax error in `.github/workflows/ci.yml`
+- Updated `docs/TASKS.md` to mark Production Features as completed
+
+## [1.5.0] - 2025-11-28
+
+### Added
+- **Chaos Testing**: `ChaosHelper` for fault injection (latency, errors)
+- **Performance Benchmarks**: `clients/benchmark/` with baseline and heavy-load scenarios
+- **Service Oriented Model**: `BaseService` base class for all services
+- **E-commerce Example**: `EcommerceService` and `ecommerce-flow.ts` scenario
+- **Auth Example**: `AuthService` and `auth-flow.ts` scenario
+- Documentation: `docs/BENCHMARKS.md`
+
+### Changed
+- Integrated `ChaosHelper` into `RequestHelper`
+- Updated example scenarios to use Service Oriented Model
+
+### Fixed
+- Import paths in `AuthService` and `EcommerceService`
+- Missing body parameter in `AuthService.logout()` method
+
+## [1.4.0] - 2025-11-28
+
+### Added
+- **Test Generator CLI**: `bin/generate.js` with interactive mode
+- **Code Templates**: Scenario, Service, and Factory templates
+- **Enhanced Debug Mode**: `DebugHelper` with cURL generation
+- **Better Error Messages**: Global error handling in `core/runner.ts`
+
+### Changed
+- Added `generate` script to `package.json`
+- Updated `RequestHelper` to use `DebugHelper`
+
+### Dependencies
+- Added `inquirer@9.2.12` for interactive prompts
+- Added `chalk@5.3.0` for terminal styling
+
+## [1.3.0] - 2025-11-27
+
+### Added
+- **Mock Server**: `bin/mock-server.js` for testing with static/dynamic mocks
+- **Data Factories**: `BaseFactory` and `UserFactory` for test data generation
+- **Parallel Execution**: `bin/run-parallel.js` for concurrent test runs
+- **Result Comparison**: `bin/compare-results.js` for regression detection
+
+### Changed
+- Added `mock`, `test:parallel` scripts to `package.json`
+
 ## [1.1.0] - 2025-11-28
 
 ### Planned

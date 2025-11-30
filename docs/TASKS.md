@@ -227,9 +227,9 @@
 - [x] Distributed testing with k6-operator
 - [x] Chaos testing scenarios (`ChaosHelper`)
 - [x] Performance benchmarks (`docs/BENCHMARKS.md`)
-- [ ] Custom Grafana dashboards
-- [ ] Alerting system
-- [ ] Notification integrations
+- [x] Custom Grafana dashboards
+- [x] Alerting system
+- [x] Notification integrations
 - [ ] Multi-region test execution
 
 ## Summary - Version 1.2.0

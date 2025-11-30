@@ -2,7 +2,7 @@
 set -e
 
 # Script to create a new client structure
-# Usage: ./bin/create-client.sh <client-name>
+# Usage: ./bin/cli/create-client.sh <client-name>
 
 # Colors
 RED='\033[0;31m'

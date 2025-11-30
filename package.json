@@ -8,22 +8,22 @@
     "k6-runner": "./dist/core/cli.js"
   },
   "scripts": {
-    "build": "tsc && node scripts/copy-assets.js",
+    "build": "tsc && node scripts/build/copy-assets.js",
     "start": "node dist/core/cli.js",
     "docker:build": "docker-compose build",
     "docker:run": "docker-compose up",
-    "redis:load": "node scripts/load-redis-data.js",
-    "redis:clean": "node scripts/clean-redis-data.js",
+    "redis:load": "node scripts/redis/load-redis-data.js",
+    "redis:clean": "node scripts/redis/clean-redis-data.js",
     "commit": "cz",
-    "version:bump": "./bin/version.sh",
+    "version:bump": "./bin/cli/version.sh",
     "prepare": "husky install || true",
     "security:audit": "npm audit --audit-level=moderate",
     "security:fix": "npm audit fix",
-    "mock": "node bin/mock-server.js",
-    "test:parallel": "node bin/run-parallel.js",
-    "generate": "node bin/generate.js",
-    "notify": "node bin/notify.js",
-    "trend-analysis": "node bin/trend-analysis.js"
+    "mock": "node bin/testing/mock-server.js",
+    "test:parallel": "node bin/testing/run-parallel.js",
+    "generate": "node bin/cli/generate.js",
+    "notify": "node bin/reporting/notify.js",
+    "trend-analysis": "node bin/reporting/trend-analysis.js"
   },
   "keywords": [
     "k6",

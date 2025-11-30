@@ -171,7 +171,7 @@ async function generateClient(name) {
   
   console.log(chalk.yellow(`Running create-client.sh...`));
   
-  const child = spawn('./bin/create-client.sh', [name], { stdio: 'inherit' });
+  const child = spawn('./bin/cli/create-client.sh', [name], { stdio: 'inherit' });
   
   child.on('close', (code) => {
     if (code === 0) {

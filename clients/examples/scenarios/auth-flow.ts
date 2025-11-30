@@ -1,62 +1,68 @@
 import { check, sleep } from 'k6';
-import { AuthService } from '../lib/services/AuthService.js';
+import { ConfigLoader } from '../../../core/config.js';
+import { AuthService } from '../lib/auth-service.js';
 import { DataHelper } from '../../../shared/helpers/DataHelper.js';
+import { ValidationHelper } from '../../../shared/helpers/ValidationHelper.js';
 
-const config = JSON.parse(open('../config/default.json'));
-const service = new AuthService(config.baseUrl);
+const config = new ConfigLoader().load();
+const authService = new AuthService(config.baseUrl);
 
 export const options = {
-  scenarios: {
-    auth: config.scenarios.auth
+  scenarios: config.scenarios || {
+    default: {
+      executor: 'constant-vus',
+      vus: 1,
+      duration: '30s'
+    }
   },
-  thresholds: config.thresholds
+  thresholds: config.thresholds || {
+    'http_req_duration': ['p(95)<2000'],
+    'checks': ['rate>0.9']
+  },
 };
 
+// Shared data for the flow
+let authToken = '';
+
 export default function () {
-  const credentials = {
-    username: 'user_' + DataHelper.randomString(5),
-    password: 'password123'
-  };
-  let token: string;
+  // Step 1: Register a new user
+  const username = `user_${DataHelper.randomString(8)}`;
+  const email = DataHelper.randomEmail();
+  const password = DataHelper.randomPassword();
 
-  // 1. Login
-  const loginRes = service.login(credentials);
-  
-  const success = check(loginRes, {
-    'login successful': (r) => r.status === 200 && r.json('token') !== undefined
-  });
-
-  if (!success) return;
-
-  token = loginRes.json('token') as string;
-  service.setToken(token);
-
-  sleep(1);
-
-  // 2. Access Protected Resource
-  const profileRes = service.getProfile();
-  check(profileRes, {
-    'profile access allowed': (r) => r.status === 200
+  const registerRes = authService.register(username, email, password);
+  const registerSuccess = check(registerRes, {
+    'registration successful': (r) => ValidationHelper.hasStatus(r, 201),
+    'registration response has id': (r) => ValidationHelper.hasJsonStructure(r, ['id'])
   });
 
   sleep(1);
 
-  // 3. Refresh Token
-  const refreshRes = service.refreshToken(token);
-  check(refreshRes, {
-    'refresh successful': (r) => r.status === 200
-  });
-  
-  if (refreshRes.status === 200) {
-    token = refreshRes.json('token') as string;
-    service.setToken(token);
+  // Step 2: Login with the created user
+  if (registerSuccess) {
+    const loginRes = authService.login(username, password);
+    const loginCheck = check(loginRes, {
+      'login successful': (r) => ValidationHelper.hasStatus(r, 200),
+      'login returns token': (r) => ValidationHelper.hasJsonStructure(r, ['auth_token'])
+    });
+
+    if (loginCheck && loginRes.body) {
+      authToken = JSON.parse(loginRes.body as string).auth_token;
+      console.log(`User ${username} logged in successfully`);
+    }
+
+    sleep(1);
+
+    // Step 3: Logout
+    if (authToken) {
+      const logoutRes = authService.logout(authToken);
+      check(logoutRes, {
+        'logout successful': (r) => ValidationHelper.hasStatus(r, 204)
+      });
+      
+      console.log(`User ${username} completed full auth flow`);
+    }
   }
 
-  sleep(1);
-
-  // 4. Logout
-  const logoutRes = service.logout();
-  check(logoutRes, {
-    'logout successful': (r) => r.status === 200
-  });
+  sleep(2);
 }

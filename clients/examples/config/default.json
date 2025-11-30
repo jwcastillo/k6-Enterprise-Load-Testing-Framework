@@ -1,55 +1,26 @@
 {
-  "baseUrl": "https://test-api.k6.io",
+  "baseUrl": "http://localhost:3000",
   "scenarios": {
-    "smoke": {
+    "baseline": {
       "executor": "constant-vus",
       "vus": 1,
-      "duration": "5s"
+      "duration": "10s"
     },
-    "load": {
-      "executor": "ramping-vus",
-      "startVUs": 0,
+    "heavy_load": {
+      "executor": "ramping-arrival-rate",
+      "startRate": 50,
+      "timeUnit": "1s",
+      "preAllocatedVUs": 50,
+      "maxVUs": 100,
       "stages": [
-        { "duration": "5s", "target": 5 },
-        { "duration": "10s", "target": 5 },
-        { "duration": "5s", "target": 0 }
-      ],
-      "startTime": "10s"
+        { "target": 200, "duration": "30s" },
+        { "target": 200, "duration": "1m" },
+        { "target": 0, "duration": "30s" }
+      ]
     }
   },
   "thresholds": {
-    "http_req_duration": ["p(95)<500"],
+    "http_req_duration": ["p(95)<100"],
     "http_req_failed": ["rate<0.01"]
-  },
-  "test_cases": [
-    {
-      "name": "Get Public Crocodiles",
-      "method": "GET",
-      "path": "/public/crocodiles/",
-      "headers": { "Accept": "application/json" },
-      "expected_status": 200
-    },
-    {
-      "name": "Get Single Crocodile",
-      "method": "GET",
-      "path": "/public/crocodiles/1/",
-      "expected_status": 200,
-      "checks": {
-        "is_male": "json('sex') === 'M'",
-        "has_name": "json('name') !== ''"
-      }
-    },
-    {
-      "name": "Auth Login (Example)",
-      "method": "POST",
-      "path": "/auth/token/login/",
-      "body": {
-        "username": "testuser",
-        "password": "testpassword"
-      },
-      "headers": { "Content-Type": "application/json" },
-      "expected_status": 401,
-      "description": "Expected failure with dummy credentials"
-    }
-  ]
+  }
 }

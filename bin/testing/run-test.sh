@@ -58,14 +58,27 @@ for arg in "$@"; do
 done
 
 # Validate required arguments
-if [ -z "$CLIENT" ]; then
-  echo -e "${RED}Error: --client is required${NC}"
+if [ -z "$CLIENT" ] || [ -z "$TEST" ]; then
+  echo -e "${RED}Error: --client and --test are required${NC}"
+  echo "Run with --help for usage information"
   exit 1
 fi
 
-if [ -z "$TEST" ]; then
-  echo -e "${RED}Error: --test is required${NC}"
-  exit 1
+echo -e "${GREEN}🔍 Validating configuration...${NC}"
+
+# Validate configuration before running test
+if [ -f "bin/cli/validate-config.js" ]; then
+  if ! node bin/cli/validate-config.js --client="$CLIENT" --env="$ENV" 2>/dev/null; then
+    echo -e "${RED}❌ Configuration validation failed${NC}"
+    echo -e "${YELLOW}💡 Fix the configuration errors above before running tests${NC}"
+    exit 1
+  fi
+  echo -e "${GREEN}✅ Configuration is valid${NC}"
+  echo ""
+else
+  echo -e "${YELLOW}⚠️  Config validator not found, skipping validation${NC}"
+  echo -e "${YELLOW}   Run 'npm run build' to enable config validation${NC}"
+  echo ""
 fi
 
 # Build the project
@@ -88,4 +101,24 @@ echo ""
 
 $CMD
 
-echo -e "${GREEN}Test completed!${NC}"
+TEST_EXIT_CODE=$?
+
+# Auto-compare with previous results
+if [ $TEST_EXIT_CODE -eq 0 ]; then
+  echo ""
+  echo -e "${BLUE}🔍 Comparing with previous results...${NC}"
+  
+  if [ -f "bin/testing/auto-compare.js" ]; then
+    node bin/testing/auto-compare.js --client="$CLIENT" --test="$TEST" || true
+  else
+    echo -e "${YELLOW}⚠️  Auto-compare not available${NC}"
+  fi
+fi
+
+if [ $TEST_EXIT_CODE -eq 0 ]; then
+  echo -e "${GREEN}Test completed successfully!${NC}"
+else
+  echo -e "${RED}Test failed!${NC}"
+fi
+
+exit $TEST_EXIT_CODE

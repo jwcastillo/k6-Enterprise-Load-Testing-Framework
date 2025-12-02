@@ -1,10 +1,11 @@
 {
-  "baseUrl": "https://jsonplaceholder.typicode.com",
+  "baseUrl": "http://localhost:3000",
   "scenarios": {
     "baseline": {
       "executor": "constant-vus",
       "vus": 1,
-      "duration": "10s"
+      "duration": "10s",
+      "exec": "default"
     },
     "heavy_load": {
       "executor": "ramping-arrival-rate",
@@ -12,6 +13,7 @@
       "timeUnit": "1s",
       "preAllocatedVUs": 50,
       "maxVUs": 100,
+      "exec": "default",
       "stages": [
         { "target": 200, "duration": "30s" },
         { "target": 200, "duration": "1m" },
@@ -21,7 +23,8 @@
     "ecommerce": {
       "executor": "constant-vus",
       "vus": 5,
-      "duration": "30s"
+      "duration": "30s",
+      "exec": "default"
     }
   },
   "thresholds": {

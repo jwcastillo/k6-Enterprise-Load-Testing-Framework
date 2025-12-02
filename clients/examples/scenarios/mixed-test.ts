@@ -69,10 +69,10 @@ export default async function () {
     ]);
 
     // Verify login success
+    const isVisible = await page.locator('.welcome-message').isVisible();
     const uiCheck = check(page, {
       'Browser: login successful': () => page.url().includes('/dashboard'),
-      'Browser: welcome message visible': async () => 
-        await page.locator('.welcome-message').isVisible(),
+      'Browser: welcome message visible': () => isVisible,
     });
 
     // Take screenshot after login

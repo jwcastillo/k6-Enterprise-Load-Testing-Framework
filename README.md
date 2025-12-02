@@ -21,16 +21,26 @@ node dist/core/cli.js --client=local --test=example.ts
 
 ## 📚 Documentation
 
-- **[README](docs/README.md)** - Complete framework documentation
-- **[Test Types Guide](docs/TEST_TYPES.md)** - Unit, Flow, Browser, and Mixed tests
-- **[Redis Integration Guide](docs/REDIS.md)** - Using Redis for data management
-- **[Extensions & Instrumentation](docs/EXTENSIONS.md)** - Tracing (Tempo), Profiling (Pyroscope), and xk6 extensions
-- **[Running Tests On-Demand](docs/RUNNING_TESTS.md)** - Execute tests via CI/CD pipelines
-- **[Client Management](docs/CLIENT_MANAGEMENT.md)** - Manage client code in separate repositories
-- **[Contributing Guide](docs/CONTRIBUTING.md)** - How to contribute to the project
-- **[Commit Guidelines](docs/COMMIT_GUIDELINES.md)** - Conventional commits and versioning
-- **[Security Policy](SECURITY.md)** - Security guidelines and reporting
-- **[Tasks & Roadmap](docs/TASKS.md)** - Project tasks and future plans
+### Core Documentation
+- **[Framework Summary](docs/FRAMEWORK_SUMMARY.md)** - Complete feature overview
+- **[Examples Guide](docs/EXAMPLES.md)** - All 13 example scenarios
+- **[Configuration Validation](docs/CONFIG_VALIDATION.md)** - Config validation with JSON Schema
+
+### Architecture & Patterns
+- **[Architecture](docs/ARCHITECTURE.md)** - Test Automation Solution architecture
+- **[Service Object Model](docs/SERVICE_OBJECT_MODEL.md)** - SOM pattern guide
+- **[Compliance](docs/COMPLIANCE.md)** - 100% compliance verification
+
+### Integration & Operations
+- **[CI/CD Integration](docs/CI_CD_INTEGRATION.md)** - GitHub Actions & GitLab CI
+- **[Client Management](docs/CLIENT_MANAGEMENT.md)** - Multi-client architecture
+- **[Observability](docs/OBSERVABILITY.md)** - Tempo, Pyroscope, Grafana
+
+### Development
+- **[Contributing Guide](docs/CONTRIBUTING.md)** - How to contribute
+- **[Commit Guidelines](docs/COMMIT_GUIDELINES.md)** - Conventional commits
+- **[Security Policy](SECURITY.md)** - Security guidelines
+
 
 ## 👨‍💻 Development Workflow
 

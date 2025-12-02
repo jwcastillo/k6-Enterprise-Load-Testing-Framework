@@ -54,6 +54,15 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Validate Configuration
+        env:
+          CLIENT: ${{ github.event.inputs.client }}
+          ENV: ${{ github.event.inputs.env }}
+        run: |
+          echo "🔍 Validating configuration..."
+          node bin/cli/validate-config.js --client="$CLIENT" --env="$ENV"
+          echo "✅ Configuration is valid"
+
       - name: Setup k6
         uses: grafana/setup-k6-action@v1
 

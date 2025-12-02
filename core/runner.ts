@@ -112,6 +112,11 @@ export class Runner {
       ENV: this.options.env,
       CONFIG: JSON.stringify(config),
       K6_REPORT_DIR: reportDir, // Inject report directory for screenshots
+      // Prometheus custom tags for test comparison
+      K6_TEST_NAME: testName,
+      K6_TEST_TIMESTAMP: timestamp,
+      K6_CLIENT: this.options.client,
+      K6_ENVIRONMENT: this.options.env,
     };
 
     console.log(`\nExecuting k6: k6 ${k6Args.join(' ')}`);

@@ -1,5 +1,5 @@
 import { check, sleep } from 'k6';
-import { GraphQLHelper } from '../../../shared/helpers/GraphQLHelper';
+import { GraphQLHelper } from '../../../shared/helpers/GraphQLHelper.js';
 
 // Using a public GraphQL API for testing (SpaceX API)
 const graphql = new GraphQLHelper('https://spacex-production.up.railway.app');

@@ -80,7 +80,7 @@ export default function () {
   }
 }
 
-export function handleSummary(data) {
+export function handleSummary(data: any) {
   const rateLimitCount = data.metrics.rate_limit_hits?.values?.count || 0;
   const successCount = data.metrics.successful_requests?.values?.count || 0;
   const totalRequests = rateLimitCount + successCount;

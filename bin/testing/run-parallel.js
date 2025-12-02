@@ -6,11 +6,11 @@
  * Usage: node bin/run-parallel.js --tests="clients/local/scenarios/*.ts" --concurrency=2
  */
 
-const { spawn } = require('child_process');
-const glob = require('glob');
-const minimist = require('minimist');
-const path = require('path');
-const os = require('os');
+import { spawn } from 'child_process';
+import { globSync } from 'glob';
+import minimist from 'minimist';
+import path from 'path';
+import os from 'os';
 
 // Parse arguments
 const args = minimist(process.argv.slice(2));
@@ -26,7 +26,7 @@ if (!PATTERN) {
 }
 
 // Find test files
-const testFiles = glob.sync(PATTERN);
+const testFiles = globSync(PATTERN);
 
 if (testFiles.length === 0) {
   console.error(`❌ No test files found matching pattern: ${PATTERN}`);

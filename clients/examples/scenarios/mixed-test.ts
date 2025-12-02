@@ -1,4 +1,4 @@
-import { browser } from 'k6/experimental/browser';
+import { browser } from 'k6/browser';
 import { check, sleep } from 'k6';
 import { ConfigLoader } from '../../../core/config.js';
 import { AuthService } from '../lib/auth-service.js';
@@ -48,7 +48,7 @@ export default async function () {
   sleep(2);
 
   // PART 2: Browser - Login via UI
-  const page = browser.newPage();
+  const page = await browser.newPage();
 
   try {
     console.log('Opening login page in browser...');
@@ -71,8 +71,8 @@ export default async function () {
     // Verify login success
     const uiCheck = check(page, {
       'Browser: login successful': () => page.url().includes('/dashboard'),
-      'Browser: welcome message visible': () => 
-        page.locator('.welcome-message').isVisible(),
+      'Browser: welcome message visible': async () => 
+        await page.locator('.welcome-message').isVisible(),
     });
 
     // Take screenshot after login

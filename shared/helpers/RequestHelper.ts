@@ -16,9 +16,7 @@ export class RequestHelper {
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
-    this.defaultHeaders = {
-      'Content-Type': 'application/json',
-    };
+    this.defaultHeaders = {};
     this.headers = this.defaultHeaders; // Alias for backward compatibility if needed
 
     // Initialize HTTP client with default k6 http
@@ -137,7 +135,11 @@ export class RequestHelper {
 
     const url = this.buildUrl(path);
     const payload = typeof body === 'string' ? body : JSON.stringify(body);
-    const requestParams = this.buildParams({ headers: this.buildHeaders(headers) });
+    const headersWithContentType = {
+      'Content-Type': 'application/json',
+      ...headers
+    };
+    const requestParams = this.buildParams({ headers: this.buildHeaders(headersWithContentType) });
     this.logDebug('POST', url, { ...requestParams, body: payload });
     const response = this.httpClient.post(url, payload, requestParams);
     this.logDebug('POST', url, null, response);
@@ -150,7 +152,11 @@ export class RequestHelper {
   public put(path: string, body: any, headers?: Record<string, string>): RefinedResponse<any> {
     const url = this.buildUrl(path);
     const payload = typeof body === 'string' ? body : JSON.stringify(body);
-    const requestParams = this.buildParams({ headers: this.buildHeaders(headers) });
+    const headersWithContentType = {
+      'Content-Type': 'application/json',
+      ...headers
+    };
+    const requestParams = this.buildParams({ headers: this.buildHeaders(headersWithContentType) });
     this.logDebug('PUT', url, { ...requestParams, body: payload });
     const response = this.httpClient.put(url, payload, requestParams);
     this.logDebug('PUT', url, null, response);
@@ -163,7 +169,11 @@ export class RequestHelper {
   public patch(path: string, body: any, headers?: Record<string, string>): RefinedResponse<any> {
     const url = this.buildUrl(path);
     const payload = typeof body === 'string' ? body : JSON.stringify(body);
-    const requestParams = this.buildParams({ headers: this.buildHeaders(headers) });
+    const headersWithContentType = {
+      'Content-Type': 'application/json',
+      ...headers
+    };
+    const requestParams = this.buildParams({ headers: this.buildHeaders(headersWithContentType) });
     this.logDebug('PATCH', url, { ...requestParams, body: payload });
     const response = this.httpClient.patch(url, payload, requestParams);
     this.logDebug('PATCH', url, null, response);

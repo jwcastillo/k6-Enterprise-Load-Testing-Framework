@@ -1,10 +1,10 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
-  "required": ["id", "email", "name"],
+  "required": ["id", "email", "name", "username"],
   "properties": {
     "id": {
-      "type": "integer",
+      "type": "number",
       "minimum": 1
     },
     "email": {
@@ -13,21 +13,11 @@
     },
     "name": {
       "type": "string",
-      "minLength": 1,
-      "maxLength": 100
+      "minLength": 1
     },
-    "age": {
-      "type": "integer",
-      "minimum": 0,
-      "maximum": 150
-    },
-    "role": {
+    "username": {
       "type": "string",
-      "enum": ["admin", "user", "guest"]
-    },
-    "createdAt": {
-      "type": "string",
-      "format": "date-time"
+      "minLength": 1
     }
   }
 }

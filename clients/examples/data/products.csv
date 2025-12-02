@@ -1,0 +1,11 @@
+id,name,category
+prod_1,Laptop,electronics
+prod_2,Mouse,electronics
+prod_3,Keyboard,electronics
+prod_4,Monitor,electronics
+prod_5,Headphones,audio
+prod_6,Speaker,audio
+prod_7,Desk,furniture
+prod_8,Chair,furniture
+prod_9,Lamp,lighting
+prod_10,Backpack,accessories

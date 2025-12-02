@@ -181,7 +181,7 @@ export class Runner {
       console.log('\n📊 Generating enterprise HTML report...');
       const { exec } = await import('child_process');
       const enterpriseReportPath = path.join(reportDir, `enterprise-report-${timestamp}.html`);
-      const reportCommand = `node bin/report.js --input="${jsonOutputPath}" --output="${enterpriseReportPath}" --client="${this.options.client}" --test="${testName}" --k6-dashboard="${path.basename(webDashboardPath)}" --k6-log="${path.basename(logFilePath)}" --k6-summary="${path.basename(summaryFilePath)}"`;
+      const reportCommand = `node bin/reporting/report.js --input="${jsonOutputPath}" --output="${enterpriseReportPath}" --client="${this.options.client}" --test="${testName}" --k6-dashboard="${path.basename(webDashboardPath)}" --k6-log="${path.basename(logFilePath)}" --k6-summary="${path.basename(summaryFilePath)}"`;
       await new Promise<void>((resolve, reject) => {
         exec(reportCommand, { cwd: this.rootDir }, (error: Error | null, stdout: string, stderr: string) => {
           if (error) {

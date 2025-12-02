@@ -9,15 +9,27 @@ export interface Config {
   [key: string]: any;
 }
 
+/**
+ * ConfigLoader - Handles loading and merging of configuration
+ * Supports environment variables and default values
+ */
 export class ConfigLoader {
   private client: string;
   private env: string;
 
+  /**
+   * Initialize ConfigLoader
+   * Reads CLIENT and ENV from environment variables
+   */
   constructor() {
     this.client = __ENV.CLIENT || 'default';
     this.env = __ENV.ENV || 'local';
   }
 
+  /**
+   * Load and merge configuration
+   * @returns The merged configuration object
+   */
   public load(): Config {
     // In k6, we can't use 'fs' freely in the main thread in the same way as Node.
     // We rely on SharedArray to load JSONs if needed, or just pure imports if we bundle.

@@ -31,6 +31,17 @@ async function copyAssets() {
     console.log(`  ✅ Copied ${file}`);
   }
 
+  // Copy contract files
+  const contractFiles = await glob('clients/**/contracts/**/*.{json,yaml,yml}', { cwd: srcDir });
+  for (const file of contractFiles) {
+    const srcPath = path.join(srcDir, file);
+    const destPath = path.join(distDir, file);
+    
+    await fs.ensureDir(path.dirname(destPath));
+    await fs.copy(srcPath, destPath);
+    console.log(`  ✅ Copied ${file}`);
+  }
+
   console.log('✨ Assets copied successfully');
 }
 

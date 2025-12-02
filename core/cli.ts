@@ -17,7 +17,7 @@ const runner = new Runner({
   config: args.config, // Pass custom config path
 });
 
-(runner as any).run().catch((err: any) => {
+runner.run().catch((err: Error) => {
   console.error(err);
   process.exit(1);
 });

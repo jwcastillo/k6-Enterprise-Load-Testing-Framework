@@ -5,6 +5,52 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0] - 2025-12-02
+
+### Added
+- **Mock Server Enhancements**: Comprehensive mock endpoints for ecommerce, file upload, and browser testing
+  - `/api/products` (GET) - Product search endpoint
+  - `/api/products/:id` (GET) - Product details endpoint
+  - `/api/cart` (POST) - Add to cart endpoint
+  - `/api/checkout` (POST) - Checkout endpoint
+  - `/api/upload` (POST) - File upload mock endpoint
+  - `/` (GET) - HTML homepage for browser tests
+- **Data-Driven Testing**: CSV data support with SharedArray
+  - `clients/examples/data/products.csv` - Product test data
+  - Integration with papaparse for CSV parsing
+- **Code Quality Guidelines**: Project coding standards documentation
+  - `gemini.md` - Coding guidelines for Gemini AI
+  - `claude.md` - Coding guidelines for Claude AI
+  - Service Object Model enforcement
+  - TypeScript best practices
+- **Documentation**: Spanish translation of client management guide
+  - `docs/CLIENT_MANAGEMENT_ES.md` - Complete Spanish version
+
+### Changed
+- **Test Scenarios**: Refactored for better isolation and data-driven testing
+  - `ecommerce-flow.ts` - Now uses CSV data and local scenario definition
+  - `file-upload.ts` - Points to local mock server instead of httpbin.org
+  - All scenarios decoupled from global config for better isolation
+- **Test Execution**: Sequential execution by default
+  - `bin/testing/run-all-tests.sh` - Changed default concurrency from 4 to 1
+- **CLI Scripts**: Converted to ES modules for consistency
+  - `bin/cli/validate-config.js` - Migrated from CommonJS to ESM
+  - `bin/testing/run-parallel.js` - Migrated from CommonJS to ESM
+  - `bin/testing/mock-server.js` - Migrated from CommonJS to ESM
+  - `bin/testing/auto-compare.js` - Migrated from CommonJS to ESM
+
+### Fixed
+- **TypeScript Compliance**: Added missing JSDoc comments
+  - `core/service.ts` - BaseService documentation
+  - `core/config.ts` - ConfigLoader documentation
+  - `clients/examples/lib/example-service.ts` - ExampleService documentation
+- **Type Safety**: Removed `any` usage in core files
+  - `core/cli.ts` - Proper Error typing
+- **Configuration**: Added `exec` property to k6 scenarios
+  - `clients/examples/config/default.json` - Fixed scenario execution
+- **Mock Server**: Fixed client mocks directory path resolution
+  - Corrected from `../clients` to `../../clients`
+
 ## [1.8.0] - 2025-11-30
 
 ### Added

@@ -4,6 +4,7 @@ dist/
 *.log
 .DS_Store
 screenshots/
+reports/
 
 performance.xml
 repomix-output.xml

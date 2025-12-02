@@ -1,5 +1,5 @@
 {
-  "baseUrl": "http://localhost:3000",
+  "baseUrl": "https://jsonplaceholder.typicode.com",
   "scenarios": {
     "baseline": {
       "executor": "constant-vus",
@@ -17,6 +17,11 @@
         { "target": 200, "duration": "1m" },
         { "target": 0, "duration": "30s" }
       ]
+    },
+    "ecommerce": {
+      "executor": "constant-vus",
+      "vus": 5,
+      "duration": "30s"
     }
   },
   "thresholds": {

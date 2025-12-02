@@ -1,4 +1,4 @@
-import { browser } from 'k6/experimental/browser';
+import { browser } from 'k6/browser';
 import { check, sleep } from 'k6';
 import { ConfigLoader } from '../../../core/config.js';
 
@@ -25,7 +25,7 @@ export const options = {
 };
 
 export default async function () {
-  const page = browser.newPage();
+  const page = await browser.newPage();
 
   try {
     // Navigate to the homepage
@@ -41,13 +41,14 @@ export default async function () {
     sleep(1);
 
     // Interact with the page
-    const headerText = page.locator('h1').textContent();
-    check(headerText, {
-      'header exists': (text) => text !== null && text.length > 0,
+    const heading = await page.locator('h2').textContent();
+    check(page, {
+      'heading is correct': () => heading === 'Welcome to the k6 browser demo',
+      'heading is visible': () => heading !== null && heading.length > 0
     });
 
     console.log(`Page title: ${page.title()}`);
-    console.log(`Header text: ${headerText}`);
+    console.log(`Header text: ${heading}`);
 
     sleep(2);
 

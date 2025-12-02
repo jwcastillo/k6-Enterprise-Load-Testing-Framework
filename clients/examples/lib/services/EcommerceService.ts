@@ -1,5 +1,5 @@
-import { BaseService } from '../../../../shared/base-service';
-import { RequestHelper } from '../../../../shared/helpers/RequestHelper';
+import { BaseService } from '../../../../shared/base-service.js';
+import { RequestHelper } from '../../../../shared/helpers/RequestHelper.js';
 
 export class EcommerceService extends BaseService {
   private requestHelper: RequestHelper;

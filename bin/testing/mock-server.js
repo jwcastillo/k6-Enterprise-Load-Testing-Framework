@@ -6,13 +6,17 @@
  * Usage: node bin/mock-server.js --client=local --port=3000
  */
 
-const express = require('express');
-const cors = require('cors');
-const bodyParser = require('body-parser');
-const fs = require('fs');
-const path = require('path');
-const minimist = require('minimist');
-const glob = require('glob');
+import express from 'express';
+import cors from 'cors';
+import bodyParser from 'body-parser';
+import fs from 'fs';
+import path from 'path';
+import minimist from 'minimist';
+import { globSync } from 'glob';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Parse arguments
 const args = minimist(process.argv.slice(2));
@@ -41,7 +45,7 @@ app.use((req, res, next) => {
 });
 
 // Load mocks
-const MOCKS_DIR = path.resolve(__dirname, `../clients/${CLIENT}/mocks`);
+const MOCKS_DIR = path.resolve(__dirname, `../../clients/${CLIENT}/mocks`);
 const ROUTES_FILE = path.join(MOCKS_DIR, 'routes.json');
 
 console.log(`🚀 Starting Mock Server for client: ${CLIENT}`);
@@ -79,18 +83,20 @@ if (!fs.existsSync(MOCKS_DIR)) {
 }
 
 // Load dynamic JS mocks (middleware style)
-const jsMocks = glob.sync(`${MOCKS_DIR}/**/*.js`);
-jsMocks.forEach(file => {
+const jsMocks = globSync(`${MOCKS_DIR}/**/*.js`);
+for (const file of jsMocks) {
   try {
-    const mockModule = require(file);
-    if (typeof mockModule === 'function') {
+    const mockModule = await import(file);
+    const mockFn = mockModule.default || mockModule;
+    
+    if (typeof mockFn === 'function') {
       console.log(`🔌 Loading dynamic mock: ${path.basename(file)}`);
-      mockModule(app);
+      mockFn(app);
     }
   } catch (err) {
     console.error(`❌ Error loading mock ${file}:`, err.message);
   }
-});
+}
 
 // Load static JSON routes
 if (fs.existsSync(ROUTES_FILE)) {

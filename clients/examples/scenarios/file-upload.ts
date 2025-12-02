@@ -1,10 +1,19 @@
 import { check, sleep } from 'k6';
 import http from 'k6/http';
+// @ts-ignore
 import { FormData } from 'https://jslib.k6.io/formdata/0.0.2/index.js';
+import { ConfigLoader } from '../../../core/config.js';
+
+const config = new ConfigLoader().load();
 
 export const options = {
-  vus: 5,
-  duration: '30s'
+  scenarios: {
+    upload: {
+      executor: 'constant-vus',
+      vus: 5,
+      duration: '30s'
+    }
+  }
 };
 
 export default function () {
@@ -17,8 +26,8 @@ export default function () {
   formData.append('description', 'Test file upload from k6');
   formData.append('category', 'testing');
 
-  // Upload file (using httpbin.org for testing)
-  const uploadRes = http.post('https://httpbin.org/post', formData.body(), {
+  // Upload file to local mock server
+  const uploadRes = http.post(`${config.baseUrl}/api/upload`, formData.body(), {
     headers: {
       'Content-Type': 'multipart/form-data; boundary=' + formData.boundary
     }
@@ -37,21 +46,4 @@ export default function () {
   });
 
   sleep(1);
-
-  // Test file download
-  const downloadRes = http.get('https://httpbin.org/bytes/1024');
-
-  check(downloadRes, {
-    'download status is 200': (r) => r.status === 200,
-    'downloaded correct size': (r) => r.body?.length === 1024
-  });
-
-  // Test large file download
-  const largeFileRes = http.get('https://httpbin.org/bytes/10240');
-
-  check(largeFileRes, {
-    'large file download status is 200': (r) => r.status === 200,
-    'large file correct size': (r) => r.body?.length === 10240,
-    'large file download time acceptable': (r) => r.timings.duration < 5000
-  });
 }

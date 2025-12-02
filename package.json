@@ -23,7 +23,8 @@
     "test:parallel": "node bin/testing/run-parallel.js",
     "generate": "node bin/cli/generate.js",
     "notify": "node bin/reporting/notify.js",
-    "trend-analysis": "node bin/reporting/trend-analysis.js"
+    "trend-analysis": "node bin/reporting/trend-analysis.js",
+    "reports:clean": "rm -rf reports/*"
   },
   "keywords": [
     "k6",

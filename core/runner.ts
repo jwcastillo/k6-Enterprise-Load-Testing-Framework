@@ -64,6 +64,7 @@ export class Runner {
     await fs.ensureDir(reportDir);
 
     const jsonOutputPath = path.join(reportDir, `k6-output-${timestamp}.json`);
+    const summaryJsonPath = path.join(reportDir, `k6-summary-${timestamp}.json`);
     const webDashboardPath = path.join(reportDir, `k6-dashboard-${timestamp}.html`);
     const logFilePath = path.join(reportDir, `k6-execution-${timestamp}.log`);
     const summaryFilePath = path.join(reportDir, `k6-summary-${timestamp}.txt`);
@@ -94,6 +95,7 @@ export class Runner {
     // Add output formats
     k6Args.push('--out', `json=${jsonOutputPath}`);
     k6Args.push('--out', `web-dashboard=export=${webDashboardPath}`);
+    k6Args.push('--summary-export', summaryJsonPath); // For auto-compare
 
     // Add metrics backends if configured
     if (k6Options.metricsBackends && Array.isArray(k6Options.metricsBackends)) {

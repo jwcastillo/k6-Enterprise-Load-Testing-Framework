@@ -97,7 +97,16 @@ reports/{client}/{test}/
 ├── enterprise-report-{timestamp}.html  # Custom enterprise HTML report
 ├── k6-execution-{timestamp}.log        # Full execution log
 ├── k6-summary-{timestamp}.txt          # Text summary of results
-└── comparison-{timestamp}.md           # Performance comparison (if previous runs exist)
+reports/{client}/{test}/
+├── k6-output-{timestamp}.json          # Raw k6 metrics (NDJSON format)
+├── k6-summary-{timestamp}.json         # Summary metrics for comparison
+├── k6-dashboard-{timestamp}.html       # k6 web dashboard (interactive charts)
+├── enterprise-report-{timestamp}.html  # Custom enterprise HTML report (with Scenario Analysis)
+├── k6-execution-{timestamp}.log        # Full execution log
+├── k6-summary-{timestamp}.txt          # Text summary of results
+├── comparison-{timestamp}.md           # Performance comparison (if previous runs exist)
+├── enterprise-report-{timestamp}_metadata.json # Test metadata
+└── comparison-{timestamp}.md           # Performance trend analysis
 ```
 
 ## 🔧 Configuration
@@ -147,6 +156,11 @@ K6_PYROSCOPE_ENABLED=true
 
 # Enable chaos testing
 K6_CHAOS_ENABLED=true
+# Enable chaos testing
+K6_CHAOS_ENABLED=true
+
+# Enable Slack notifications
+SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."
 ```
 
 ### Scenario Configuration (YAML)

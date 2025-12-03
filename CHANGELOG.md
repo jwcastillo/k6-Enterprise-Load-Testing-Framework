@@ -20,6 +20,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `StructuredLogger.logEvent()` - Log custom events
   - `StructuredLogger.logError()` - Log errors with context
   - Enable with `K6_STRUCTURED_LOGS=true` environment variable
+- **Enhanced Reporting**: Comprehensive HTML report improvements
+  - **Scenario Analysis**: Detailed breakdown of metrics per scenario (checks, throughput, latency, failures)
+  - **Visual Comparison**: Trend analysis with visual cards for improvements/degradations and collapsible details
+  - **Configuration Display**: Formatted view of test configuration (Base URL, Thresholds, Options)
+  - **File Links**: Direct access to all generated files (Dashboard, Logs, Summary, Comparison, Metadata)
+- **Slack Notifications**: Automated test result notifications
+  - `bin/reporting/slack-notify.js` - Module for sending rich Slack messages
+  - Integration with `run-test.sh` via `SLACK_WEBHOOK_URL`
+  - Includes test status, key metrics, and file list
 
 ## [1.9.1] - 2025-12-03
 

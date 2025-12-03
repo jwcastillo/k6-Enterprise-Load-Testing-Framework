@@ -51,7 +51,7 @@ if (options.input) {
 
 // Default output: reports/{client}/{test}/enterprise-report-{timestamp}.html
 const defaultOutput = path.join('reports', clientName, testName, `enterprise-report-${timestamp}.html`);
-const { input, output = defaultOutput, test = testName, client = clientName, 'k6-dashboard': k6Dashboard, 'k6-log': k6Log, 'k6-summary': k6Summary } = options;
+const { input, output = defaultOutput, test = testName, client = clientName, 'k6-dashboard': k6Dashboard, 'k6-log': k6Log, 'k6-summary': k6Summary, config: configPath, comparison: comparisonPath } = options;
 
 if (!input && process.stdin.isTTY) {
   console.error('Usage: node bin/report.js --input=<json-file> [--output=<html-file>] [--test=<test-name>] [--client=<client-name>] [--k6-dashboard=<filename>] [--k6-log=<filename>] [--k6-summary=<filename>]');
@@ -65,6 +65,8 @@ if (!input && process.stdin.isTTY) {
   console.error('  --k6-dashboard=<file> Filename of k6 web dashboard HTML (for hyperlinking)');
   console.error('  --k6-log=<file>       Filename of k6 execution log (for hyperlinking)');
   console.error('  --k6-summary=<file>   Filename of k6 summary file (for hyperlinking)');
+  console.error('  --config=<file>       Path to test configuration JSON file');
+  console.error('  --comparison=<file>   Path to comparison markdown file');
   console.error('');
   console.error('Examples:');
   console.error('  node bin/report.js --input=output.json');
@@ -215,9 +217,13 @@ function calculateStats(values) {
 }
 
 /**
- * Generate Enterprise HTML report with charts and detailed breakdowns
+ * Generate Enterprise HTML report with FAANG styling + Deep Logic
  */
-function generateHTML(metrics, checks, testInfo, groupedMetrics, testName, clientName, k6Dashboard, k6Log, k6Summary, screenshots = []) {
+function generateHTML(metrics, checks, testInfo, groupedMetrics, testName, clientName, k6Dashboard, k6Log, k6Summary, screenshots = [], config = null, comparison = null, scenarios = null, comparisonFile = null, metadataFile = null, summaryJsonFile = null, scenarioMetrics = null) {
+  // 1. Logic & Calculation Layer
+  // ---------------------------
+  
+  // Calculate Check Statistics
   const checkStats = Object.entries(checks).map(([name, data]) => ({
     name,
     passed: data.passed,
@@ -228,121 +234,90 @@ function generateHTML(metrics, checks, testInfo, groupedMetrics, testName, clien
 
   const totalChecks = checkStats.reduce((sum, c) => sum + c.total, 0);
   const passedChecks = checkStats.reduce((sum, c) => sum + c.passed, 0);
+  const failedChecks = totalChecks - passedChecks;
   const overallRate = totalChecks > 0 ? ((passedChecks / totalChecks) * 100).toFixed(2) : 0;
 
-  const metricStats = Object.entries(metrics)
-    .filter(([name]) => !name.startsWith('data_'))
-    .map(([name, data]) => ({
-      name,
-      stats: calculateStats(data.values),
-      type: data.type
-    }))
-    .filter(m => m.stats);
-
+  // Formatting helpers
   const duration = testInfo.duration ? (testInfo.duration / 1000).toFixed(2) : 'N/A';
   const startTime = testInfo.startTime ? new Date(testInfo.startTime).toLocaleString() : 'N/A';
   const endTime = testInfo.endTime ? new Date(testInfo.endTime).toLocaleString() : 'N/A';
+  const reqsPerSec = metrics.http_reqs ? (metrics.http_reqs.values.length / (testInfo.duration / 1000)).toFixed(2) : 0;
 
-  // Prepare chart data for response times
+  // Chart Data Preparation
   const httpDurationData = metrics.http_req_duration ? calculateStats(metrics.http_req_duration.values) : null;
   const httpWaitingData = metrics.http_req_waiting ? calculateStats(metrics.http_req_waiting.values) : null;
 
-  // Define thresholds (these could come from config in the future)
+  // SLA / Threshold Definitions (Restored Logic)
   const thresholds = {
-    http_req_duration_p95: 500, // 500ms
-    http_req_waiting_p95: 300,  // 300ms
-    http_req_failed_rate: 0.01  // 1%
+    http_req_duration_p95: 500, // Alert if P95 > 500ms
+    http_req_error_rate: 1.0    // Alert if Errors > 1%
   };
 
-  // Check threshold violations
-  const checkThreshold = (metricName, value, threshold) => {
-    if (!threshold) return false;
-    return value > threshold;
-  };
-
-
-  // Prepare grouped metrics for display
+  // 2. HTML Generation Layer (Modern CSS + Logic Injection)
+  // -------------------------------------------------------
+  
+  // Generate Endpoint Cards with Threshold Logic
   let groupedMetricsHTML = '';
   Object.keys(groupedMetrics).forEach(group => {
-    const groupName = group || 'Default Group';
-    groupedMetricsHTML += `
-      <div class="section">
-        <h2>🎯 Group: ${groupName}</h2>
-        ${Object.keys(groupedMetrics[group]).map(path => {
-          const pathMetrics = groupedMetrics[group][path];
-          const durationStats = pathMetrics.http_req_duration ? calculateStats(pathMetrics.http_req_duration.values) : null;
-          const waitingStats = pathMetrics.http_req_waiting ? calculateStats(pathMetrics.http_req_waiting.values) : null;
-          const failedStats = pathMetrics.http_req_failed ? calculateStats(pathMetrics.http_req_failed.values) : null;
-          const reqCount = pathMetrics.http_reqs ? pathMetrics.http_reqs.values.length : 0;
+    // Solo mostramos grupos que tengan contenido
+    const paths = Object.keys(groupedMetrics[group]);
+    if (paths.length === 0) return;
 
-          const durationViolation = durationStats && checkThreshold('http_req_duration_p95', durationStats.p95, thresholds.http_req_duration_p95);
-          const waitingViolation = waitingStats && checkThreshold('http_req_waiting_p95', waitingStats.p95, thresholds.http_req_waiting_p95);
-          
-          return `
-            <div class="path-card ${durationViolation || waitingViolation ? 'threshold-violation' : ''}">
-              <h3>📍 ${path}</h3>
-              ${durationViolation || waitingViolation ? '<div class="violation-badge">⚠️ Threshold Violation</div>' : ''}
-              <div class="path-stats">
-                <div class="path-stat">
-                  <span class="label">Requests:</span>
-                  <span class="value">${reqCount}</span>
-                </div>
-                ${durationStats ? `
-                <div class="path-stat">
-                  <span class="label">Avg Duration:</span>
-                  <span class="value ${durationViolation ? 'violation' : ''}">${durationStats.avg.toFixed(2)}ms</span>
-                </div>
-                <div class="path-stat">
-                  <span class="label">P95 Duration:</span>
-                  <span class="value ${durationViolation ? 'violation' : ''}">${durationStats.p95.toFixed(2)}ms</span>
-                </div>
-                ` : ''}
-                ${failedStats ? `
-                <div class="path-stat">
-                  <span class="label">Failed:</span>
-                  <span class="value ${failedStats.max > 0 ? 'danger' : 'success'}">${failedStats.max > 0 ? 'Yes' : 'No'}</span>
-                </div>
-                ` : ''}
-              </div>
-              ${durationStats ? `
-              <table class="path-table">
-                <thead>
-                  <tr>
-                    <th>Metric</th>
-                    <th>Min</th>
-                    <th>Avg</th>
-                    <th>P90</th>
-                    <th>P95</th>
-                    <th>Max</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${Object.keys(pathMetrics).filter(m => m.startsWith('http_req')).map(metricName => {
-                    const stats = calculateStats(pathMetrics[metricName].values);
-                    if (!stats) return '';
-                    
-                    const isViolation = (metricName === 'http_req_duration' && stats.p95 > thresholds.http_req_duration_p95) ||
-                                       (metricName === 'http_req_waiting' && stats.p95 > thresholds.http_req_waiting_p95);
-                    
-                    return `
-                      <tr class="${isViolation ? 'violation-row' : ''}">
-                        <td><strong>${metricName}</strong></td>
-                        <td>${stats.min.toFixed(2)}</td>
-                        <td>${stats.avg.toFixed(2)}</td>
-                        <td>${stats.p90.toFixed(2)}</td>
-                        <td class="${isViolation ? 'violation' : ''}">${stats.p95.toFixed(2)}</td>
-                        <td>${stats.max.toFixed(2)}</td>
-                      </tr>
-                    `;
-                  }).join('')}
-                </tbody>
-              </table>
-              ` : ''}
+    groupedMetricsHTML += `<div class="group-section-title">📂 ${group || 'Default Group'}</div>`;
+
+    paths.forEach(path => {
+      const pathMetrics = groupedMetrics[group][path];
+      
+      // Calculate stats for this specific endpoint
+      const durationStats = pathMetrics.http_req_duration ? calculateStats(pathMetrics.http_req_duration.values) : null;
+      const failedStats = pathMetrics.http_req_failed ? calculateStats(pathMetrics.http_req_failed.values) : null;
+      const reqCount = pathMetrics.http_reqs ? pathMetrics.http_reqs.values.length : 0;
+      
+      // Calculate specific violations
+      const errorRate = failedStats ? (failedStats.avg * 100).toFixed(2) : '0.00';
+      const isSlow = durationStats && durationStats.p95 > thresholds.http_req_duration_p95;
+      const isErrorProne = parseFloat(errorRate) > thresholds.http_req_error_rate;
+      const isViolation = isSlow || isErrorProne;
+
+      // Heuristic for HTTP Method styling
+      const method = path.includes('POST') ? 'POST' : path.includes('PUT') ? 'PUT' : path.includes('DELETE') ? 'DEL' : 'GET';
+      const cleanPath = path.replace(/^(GET|POST|PUT|DELETE)\s?/, '');
+
+      if (durationStats) {
+        groupedMetricsHTML += `
+        <div class="group-card ${isViolation ? 'card-violation' : ''}">
+          <div class="group-header">
+            <div style="display:flex; align-items:center;">
+              <span class="path-method">${method}</span>
+              <span class="path-url">${cleanPath}</span>
+              ${isViolation ? `<span class="badge badge-danger" style="margin-left:10px;">⚠️ SLA Violation</span>` : ''}
             </div>
-          `;
-        }).join('')}
-      </div>
-    `;
+            <span class="badge" style="background:#F3F4F6; color:var(--text-secondary)">${reqCount} reqs</span>
+          </div>
+          <div class="mini-stat-grid">
+            <div class="mini-stat">
+              <div class="label">Avg Duration</div>
+              <div class="value">${durationStats.avg.toFixed(2)}ms</div>
+            </div>
+            <div class="mini-stat">
+              <div class="label">P95 Duration</div>
+              <div class="value ${isSlow ? 'text-danger' : ''}">
+                ${durationStats.p95.toFixed(2)}ms
+                ${isSlow ? '<span class="violation-icon">!</span>' : ''}
+              </div>
+            </div>
+            <div class="mini-stat">
+              <div class="label">Max Duration</div>
+              <div class="value">${durationStats.max.toFixed(2)}ms</div>
+            </div>
+            <div class="mini-stat">
+              <div class="label">Error Rate</div>
+              <div class="value ${isErrorProne ? 'text-danger' : 'status-pass'}">${errorRate}%</div>
+            </div>
+          </div>
+        </div>`;
+      }
+    });
   });
 
   return `<!DOCTYPE html>
@@ -350,663 +325,548 @@ function generateHTML(metrics, checks, testInfo, groupedMetrics, testName, clien
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>k6 Enterprise Test Report</title>
+  <title>Performance Report • ${testName}</title>
+  
+  <!-- Modern Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      padding: 20px;
-      min-height: 100vh;
-    }
-    .container {
-      max-width: 1400px;
-      margin: 0 auto;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-      overflow: hidden;
-    }
-    .header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 40px;
-      text-align: center;
-    }
-    .header h1 { font-size: 2.5em; margin-bottom: 10px; }
-    .header .subtitle { 
-      opacity: 0.95; 
-      font-size: 1.2em; 
-      margin-bottom: 30px;
-      font-weight: 300;
-    }
-    .header .test-info {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 20px;
-      margin-bottom: 20px;
-      padding: 20px;
-      background: rgba(255,255,255,0.1);
-      border-radius: 12px;
-      backdrop-filter: blur(10px);
-    }
-    .header .info-item {
-      text-align: center;
-    }
-    .header .info-label {
-      font-size: 0.85em;
-      opacity: 0.8;
-      display: block;
-      margin-bottom: 5px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      font-weight: 600;
-    }
-    .header .info-value {
-      font-size: 1.2em;
-      font-weight: 700;
-      display: block;
-    }
-    .header .k6-dashboard-link {
-      text-align: center;
-      margin-top: 20px;
-      display: flex;
-      gap: 15px;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-    .dashboard-button {
-      display: inline-block;
-      background: linear-gradient(135deg, #10b981, #059669);
-      color: white;
-      padding: 12px 24px;
-      border-radius: 8px;
-      text-decoration: none;
-      font-weight: 700;
-      font-size: 0.95em;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-    .dashboard-button:hover {
-      background: linear-gradient(135deg, #059669, #047857);
-      transform: translateY(-2px);
-      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-    }
-    .log-button {
-      background: linear-gradient(135deg, #3b82f6, #2563eb);
-    }
-    .log-button:hover {
-      background: linear-gradient(135deg, #2563eb, #1d4ed8);
-    }
-    .summary-button {
-      background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-    }
-    .summary-button:hover {
-      background: linear-gradient(135deg, #7c3aed, #6d28d9);
-    }
-    .header .timestamp {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 20px;
-      margin-top: 20px;
-      padding-top: 20px;
-      border-top: 1px solid rgba(255,255,255,0.2);
-    }
-    .timestamp-item {
-      text-align: center;
-    }
-    .timestamp-item .label {
-      font-size: 0.85em;
-      opacity: 0.8;
-      display: block;
-      margin-bottom: 5px;
-    }
-    .timestamp-item .value {
-      font-size: 1.1em;
-      font-weight: 600;
-    }
-    .summary {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 20px;
-      padding: 40px;
-      background: #f8f9fa;
-    }
-    .stat-card {
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      text-align: center;
-      transition: transform 0.2s;
-    }
-    .stat-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
-    .stat-card h3 {
-      color: #666;
-      font-size: 0.9em;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 10px;
-    }
-    .stat-card .value {
-      font-size: 2em;
-      font-weight: bold;
-      color: #667eea;
-    }
-    .stat-card.success .value { color: #10b981; }
-    .stat-card.warning .value { color: #f59e0b; }
-    .stat-card.danger .value { color: #ef4444; }
-    .section {
-      padding: 40px;
-      border-bottom: 1px solid #e5e7eb;
-    }
-    .section:last-child {
-      border-bottom: none;
-    }
-    .section h2 {
-      font-size: 1.8em;
-      margin-bottom: 20px;
-      color: #333;
-      border-bottom: 3px solid #667eea;
-      padding-bottom: 10px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .chart-container {
-      position: relative;
-      height: 400px;
-      margin: 30px 0;
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-      background: white;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    th, td {
-      padding: 12px;
-      text-align: left;
-      border-bottom: 1px solid #e5e7eb;
-    }
-    th {
-      background: #f8f9fa;
-      font-weight: 600;
-      color: #666;
-      text-transform: uppercase;
-      font-size: 0.85em;
-      letter-spacing: 0.5px;
-    }
-    tr:hover { background: #f8f9fa; }
-    tr:last-child td { border-bottom: none; }
-    .badge {
-      display: inline-block;
-      padding: 4px 12px;
-      border-radius: 12px;
-      font-size: 0.85em;
-      font-weight: 600;
-    }
-    .badge.success { background: #d1fae5; color: #065f46; }
-    .badge.danger { background: #fee2e2; color: #991b1b; }
-    .progress-bar {
-      width: 100%;
-      height: 8px;
-      background: #e5e7eb;
-      border-radius: 4px;
-      overflow: hidden;
-    }
-    .progress-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #10b981, #059669);
-      transition: width 0.3s ease;
-    }
-    .path-card {
-      background: #f8f9fa;
-      border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 20px;
-      border-left: 4px solid #667eea;
-    }
-    .path-card h3 {
-      color: #333;
-      margin-bottom: 15px;
-      font-size: 1.2em;
-    }
-    .path-stats {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 15px;
-      margin-bottom: 20px;
-    }
-    .path-stat {
-      background: white;
-      padding: 10px 15px;
-      border-radius: 6px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .path-stat .label {
-      color: #666;
-      font-size: 0.9em;
-    }
-    .path-stat .value {
-      font-weight: 600;
-      color: #333;
-      font-size: 1.1em;
-    }
-    .path-stat .value.danger {
-      color: #ef4444;
-    }
-    .path-stat .value.success {
-      color: #10b981;
-    }
-    .path-table {
-      margin-top: 15px;
-      font-size: 0.9em;
-    }
-    .footer {
-      text-align: center;
-      padding: 30px;
-      color: #666;
-      font-size: 0.9em;
-      background: #f8f9fa;
-    }
-    .footer .logo {
-      font-size: 1.5em;
-      margin-bottom: 10px;
-    }
-
-    
-    /* Modern Design Enhancements */
     :root {
-      --primary: #667eea;
-      --secondary: #764ba2;
-      --success: #10b981;
-      --warning: #f59e0b;
-      --danger: #ef4444;
-      --violation: #dc2626;
-    }
-    
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    
-    .container {
-      animation: fadeIn 0.5s ease-in;
-    }
-    
-    .header::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
-      opacity: 0.3;
-    }
-    
-    .header > * {
-      position: relative;
-      z-index: 1;
-    }
-    
-    .violation-row {
-      background: #fef2f2 !important;
-    }
-    
-    .violation-row:hover {
-      background: #fee2e2 !important;
-    }
-    
-    .path-card.threshold-violation {
-      border-left-color: var(--violation);
-      background: linear-gradient(to bottom right, #fef2f2, #fee2e2);
-    }
-    
-    .violation-badge {
-      display: inline-block;
-      background: var(--violation);
-      color: white;
-      padding: 6px 14px;
-      border-radius: 20px;
-      font-size: 0.85em;
-      font-weight: 700;
-      margin-bottom: 15px;
-      animation: pulse 2s infinite;
-    }
-    
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.7; }
-    }
-    
-    .path-stat .value.violation,
-    .path-table td.violation {
-      color: var(--violation);
-      font-weight: 800;
-    }
-    
-    /* Print Styles */
-    @media print {
-      body {
-        background: white;
-        padding: 0;
-      }
+      /* Enterprise Palette */
+      --bg-body: #F9FAFB;
+      --bg-card: #FFFFFF;
+      --bg-header: #FFFFFF;
       
-      .container {
-        box-shadow: none;
-        border-radius: 0;
-      }
+      --text-primary: #111827;
+      --text-secondary: #4B5563;
+      --text-tertiary: #9CA3AF;
       
-      .header {
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-      }
+      --border-color: #E5E7EB;
       
-      .stat-card, .path-card {
-        break-inside: avoid;
-        page-break-inside: avoid;
-      }
+      /* Semantic Colors */
+      --color-success-bg: #ECFDF5;
+      --color-success-text: #059669;
+      --color-danger-bg: #FEF2F2;
+      --color-danger-text: #DC2626;
+      --color-brand: #2563EB; 
+      --color-brand-hover: #1D4ED8;
       
-      .section {
-        page-break-inside: avoid;
-      }
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
       
-      .chart-container {
-        page-break-inside: avoid;
-      }
-      
-      table {
-        page-break-inside: auto;
-      }
-      
-      tr {
-        break-inside: avoid;
-        page-break-after: auto;
-      }
-      
-      .violation-row {
-        background: #fef2f2 !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-      }
-      
-      .path-card.threshold-violation {
-        background: linear-gradient(to bottom right, #fef2f2, #fee2e2) !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-      }
-      
-      .violation-badge {
-        background: var(--violation) !important;
-        color: white !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-      }
-      
-      @page {
-        margin: 1.5cm;
-        size: A4;
-      }
+      --radius-sm: 6px;
+      --radius-md: 8px;
     }
 
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background-color: var(--bg-body);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.5;
+      padding-bottom: 60px;
+    }
+
+    .wrapper { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+    /* HEADER */
+    .top-nav {
+      background: var(--bg-header);
+      border-bottom: 1px solid var(--border-color);
+      padding: 16px 0;
+      margin-bottom: 24px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    }
+    
+    .nav-content { display: flex; justify-content: space-between; align-items: center; }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-logo { width: 32px; height: 32px; background: var(--color-brand); border-radius: var(--radius-sm); display: grid; place-items: center; color: white; font-weight: 700; font-size: 18px; }
+    .brand-info h1 { font-size: 16px; font-weight: 600; color: var(--text-primary); line-height: 1.2; }
+    .brand-info p { font-size: 12px; color: var(--text-secondary); }
+
+    /* ACTION TOOLBAR */
+    .action-toolbar { display: flex; gap: 12px; margin-bottom: 32px; flex-wrap: wrap; }
+    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; font-size: 13px; font-weight: 500; border-radius: var(--radius-sm); text-decoration: none; transition: all 0.2s ease; cursor: pointer; height: 36px; border: 1px solid transparent; }
+    .btn svg { width: 16px; height: 16px; }
+    .btn-primary { background-color: var(--color-brand); color: white; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+    .btn-primary:hover { background-color: var(--color-brand-hover); transform: translateY(-1px); }
+    .btn-outline { background-color: white; color: var(--text-secondary); border-color: var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+    .btn-outline:hover { background-color: #F3F4F6; border-color: #D1D5DB; color: var(--text-primary); }
+
+    /* KPIS */
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 32px; }
+    .card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 20px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+    .kpi-label { font-size: 11px; color: var(--text-secondary); font-weight: 600; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .kpi-value { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; color: var(--text-primary); }
+    .status-pass { color: var(--color-success-text); }
+    .status-fail { color: var(--color-danger-text); }
+
+    /* SECTIONS */
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; margin-top: 40px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
+    .section-title { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+    .chart-container { position: relative; height: 320px; width: 100%; background: white; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; margin-bottom: 32px; }
+
+    /* TABLES */
+    .table-container { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden; margin-bottom: 32px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { background: #F9FAFB; text-align: left; padding: 10px 24px; font-weight: 600; color: var(--text-secondary); border-bottom: 1px solid var(--border-color); font-size: 11px; text-transform: uppercase; }
+    td { padding: 14px 24px; border-bottom: 1px solid var(--border-color); color: var(--text-primary); }
+    tr:last-child td { border-bottom: none; }
+    .mono { font-family: var(--font-mono); }
+
+    /* BADGES & PROGRESS */
+    .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+    .badge-success { background: var(--color-success-bg); color: var(--color-success-text); border: 1px solid #A7F3D0; }
+    .badge-danger { background: var(--color-danger-bg); color: var(--color-danger-text); border: 1px solid #FECACA; }
+    .progress-bg { width: 100px; height: 6px; background: #F3F4F6; border-radius: 10px; }
+    .progress-fill { height: 100%; border-radius: 10px; background: var(--color-success-text); }
+
+    /* ENDPOINT CARDS (Modernized Logic) */
+    .group-section-title { font-size: 12px; font-weight: 700; color: var(--text-secondary); margin: 24px 0 12px 0; text-transform: uppercase; letter-spacing: 0.05em; }
+    .group-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-bottom: 16px; overflow: hidden; transition: all 0.2s ease; }
+    
+    /* Violation Styling */
+    .card-violation { border-left: 4px solid var(--color-danger-text); border-color: #FECACA; background: #FEF2F2; }
+    .text-danger { color: var(--color-danger-text) !important; font-weight: 700; }
+    .violation-icon { color: var(--color-danger-text); font-weight: bold; margin-left: 4px; }
+
+    .group-header { padding: 12px 20px; background: rgba(248, 250, 252, 0.5); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+    .path-method { font-family: var(--font-mono); font-weight: 700; color: var(--color-brand); font-size: 12px; margin-right: 8px; }
+    .path-url { font-size: 13px; font-weight: 500; }
+    .mini-stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); padding: 16px 20px; gap: 16px; }
+    .mini-stat .label { font-size: 10px; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 2px; }
+    .mini-stat .value { font-size: 14px; font-weight: 600; font-family: var(--font-mono); }
+    
+    /* SCREENSHOTS */
+    .screenshots-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; padding: 20px; }
+    .screenshot-item img { width: 100%; border-radius: 4px; border: 1px solid var(--border-color); transition: transform 0.2s; }
+    .screenshot-item img:hover { transform: scale(1.02); }
+    .screenshot-name { font-size: 11px; color: var(--text-secondary); margin-top: 5px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
+
+    .footer { text-align: center; margin-top: 40px; color: var(--text-tertiary); font-size: 12px; border-top: 1px solid var(--border-color); padding-top: 20px; }
+    @media (max-width: 768px) { .mini-stat-grid { grid-template-columns: 1fr 1fr; } }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <h1>🚀 k6 Enterprise Test Report</h1>
-      <p class="subtitle">Performance Testing & Quality Analysis</p>
-      <div class="test-info">
-        <div class="info-item">
-          <span class="info-label">Client:</span>
-          <span class="info-value">${clientName}</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Test:</span>
-          <span class="info-value">${testName}</span>
+  <nav class="top-nav">
+    <div class="wrapper nav-content">
+      <div class="brand">
+        <div class="brand-logo">k6</div>
+        <div class="brand-info">
+          <h1>${clientName}</h1>
+          <p>${testName}</p>
         </div>
       </div>
-      ${k6Dashboard || k6Log || k6Summary ? `
-      <div class="k6-dashboard-link">
-        ${k6Dashboard ? `<a href="./${k6Dashboard}" target="_blank" class="dashboard-button">📊 k6 Dashboard</a>` : ''}
-        ${k6Log ? `<a href="./${k6Log}" target="_blank" class="dashboard-button log-button">📄 Execution Log</a>` : ''}
-        ${k6Summary ? `<a href="./${k6Summary}" target="_blank" class="dashboard-button summary-button">📋 Summary</a>` : ''}
+      <div style="font-size: 12px; color: var(--text-secondary);">${startTime}</div>
+    </div>
+  </nav>
+
+  <div class="wrapper">
+    <!-- ACTION TOOLBAR -->
+    <div class="action-toolbar">
+      ${k6Dashboard ? `
+      <a href="./${k6Dashboard}" target="_blank" class="btn btn-primary">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5m.75-9l3-3 2.148 2.148A12.061 12.061 0 0116.5 7.605" /></svg>
+        Dashboard
+      </a>` : ''}
+      ${k6Log ? `
+      <a href="./${k6Log}" target="_blank" class="btn btn-outline">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
+        Logs
+      </a>` : ''}
+      ${k6Summary ? `
+      <a href="./${k6Summary}" target="_blank" class="btn btn-outline">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" /></svg>
+        Summary
+      </a>` : ''}
+      ${comparisonFile ? `
+      <a href="./${comparisonFile}" target="_blank" class="btn btn-outline">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" /></svg>
+        Comparison
+      </a>` : ''}
+      ${metadataFile ? `
+      <a href="./${metadataFile}" target="_blank" class="btn btn-outline">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" /></svg>
+        Metadata
+      </a>` : ''}
+      ${summaryJsonFile ? `
+      <a href="./${summaryJsonFile}" target="_blank" class="btn btn-outline">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" /></svg>
+        Summary JSON
+      </a>` : ''}
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-grid">
+      <div class="card">
+        <div class="kpi-label">Check Success</div>
+        <div class="kpi-value ${overallRate == 100 ? 'status-pass' : overallRate < 95 ? 'status-fail' : ''}">${overallRate}%</div>
+        <div style="font-size:12px; color:var(--text-tertiary); margin-top:4px;">${failedChecks} checks failed</div>
       </div>
-      ` : ''}
-      <div class="timestamp">
-        <div class="timestamp-item">
-          <span class="label">Start Time</span>
-          <span class="value">${startTime}</span>
+      <div class="card">
+        <div class="kpi-label">Requests / Sec</div>
+        <div class="kpi-value">${reqsPerSec}</div>
+        <div style="font-size:12px; color:var(--text-tertiary); margin-top:4px;">Total: ${metrics.http_reqs ? metrics.http_reqs.values.length : 0}</div>
+      </div>
+      <div class="card">
+        <div class="kpi-label">P95 Latency</div>
+        <div class="kpi-value">${httpDurationData ? httpDurationData.p95.toFixed(2) : 0} <span style="font-size:0.5em;color:var(--text-tertiary)">ms</span></div>
+        <div style="font-size:12px; color:var(--text-tertiary); margin-top:4px;">Max: ${httpDurationData ? httpDurationData.max.toFixed(2) : 0}ms</div>
+      </div>
+      <div class="card">
+        <div class="kpi-label">Virtual Users</div>
+        <div class="kpi-value">${testInfo.vus}</div>
+        <div style="font-size:12px; color:var(--text-tertiary); margin-top:4px;">Iterations: ${testInfo.iterations}</div>
+      </div>
+    </div>
+
+    <!-- TEST INFO -->
+    <div class="section-header">
+      <h2 class="section-title">Test Information</h2>
+    </div>
+    <div class="card" style="margin-bottom: 32px;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+        <div>
+          <div class="kpi-label">Start Time</div>
+          <div style="font-size: 14px; color: var(--text-primary); margin-top: 4px;">${startTime}</div>
         </div>
-        <div class="timestamp-item">
-          <span class="label">End Time</span>
-          <span class="value">${endTime}</span>
+        <div>
+          <div class="kpi-label">End Time</div>
+          <div style="font-size: 14px; color: var(--text-primary); margin-top: 4px;">${endTime}</div>
         </div>
-        <div class="timestamp-item">
-          <span class="label">Duration</span>
-          <span class="value">${duration}s</span>
+        <div>
+          <div class="kpi-label">Duration</div>
+          <div style="font-size: 14px; color: var(--text-primary); margin-top: 4px;">${duration}s</div>
+        </div>
+        <div>
+          <div class="kpi-label">Client</div>
+          <div style="font-size: 14px; color: var(--text-primary); margin-top: 4px;">${clientName}</div>
         </div>
       </div>
     </div>
 
-    <div class="summary">
-      <div class="stat-card ${overallRate >= 90 ? 'success' : overallRate >= 70 ? 'warning' : 'danger'}">
-        <h3>✓ Check Success Rate</h3>
-        <div class="value">${overallRate}%</div>
-      </div>
-      <div class="stat-card">
-        <h3>📋 Total Checks</h3>
-        <div class="value">${totalChecks}</div>
-      </div>
-      <div class="stat-card success">
-        <h3>✅ Passed</h3>
-        <div class="value">${passedChecks}</div>
-      </div>
-      <div class="stat-card ${totalChecks - passedChecks > 0 ? 'danger' : ''}">
-        <h3>❌ Failed</h3>
-        <div class="value">${totalChecks - passedChecks}</div>
-      </div>
-      ${metrics.http_req_waiting ? `
-      <div class="stat-card">
-        <h3>⏱️ TTFB P90</h3>
-        <div class="value">${calculateStats(metrics.http_req_waiting.values).p90.toFixed(2)}ms</div>
-      </div>
-      <div class="stat-card">
-        <h3>⏱️ TTFB P95</h3>
-        <div class="value">${calculateStats(metrics.http_req_waiting.values).p95.toFixed(2)}ms</div>
-      </div>
-      ` : ''}
-      ${metrics.http_reqs ? `
-      <div class="stat-card">
-        <h3>📊 RPS (Avg)</h3>
-        <div class="value">${(metrics.http_reqs.values.length / (testInfo.duration / 1000)).toFixed(2)}</div>
-      </div>
-      ` : ''}
-      ${testInfo.vus > 0 ? `
-      <div class="stat-card">
-        <h3>👥 Max VUs</h3>
-        <div class="value">${testInfo.vus}</div>
-      </div>
-      ` : ''}
-      ${testInfo.iterations > 0 ? `
-      <div class="stat-card">
-        <h3>🔄 Iterations</h3>
-        <div class="value">${testInfo.iterations}</div>
-      </div>
-      ` : ''}
+    ${scenarios ? `
+    <!-- SCENARIOS -->
+    <div class="section-header">
+      <h2 class="section-title">Test Scenarios</h2>
     </div>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Scenario</th>
+            <th>Executor</th>
+            <th>VUs</th>
+            <th>Duration</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${Object.entries(scenarios).map(([name, scenario]) => {
+            // Extract VUs based on executor type
+            let vusDisplay = 'N/A';
+            if (scenario.vus) vusDisplay = scenario.vus;
+            else if (scenario.startVUs) vusDisplay = scenario.startVUs;
+            else if (scenario.preAllocatedVUs) vusDisplay = `${scenario.preAllocatedVUs}-${scenario.maxVUs || scenario.preAllocatedVUs}`;
+            else if (scenario.maxVUs) vusDisplay = `0-${scenario.maxVUs}`;
+            
+            // Extract duration based on executor type
+            let durationDisplay = 'N/A';
+            if (scenario.duration) {
+              durationDisplay = scenario.duration;
+            } else if (scenario.stages && Array.isArray(scenario.stages)) {
+              // Calculate total duration from stages
+              const totalMs = scenario.stages.reduce((sum, stage) => {
+                const duration = stage.duration || '0s';
+                const match = duration.match(/(\d+)([smh])/);
+                if (match) {
+                  const value = parseInt(match[1]);
+                  const unit = match[2];
+                  if (unit === 's') return sum + value;
+                  if (unit === 'm') return sum + value * 60;
+                  if (unit === 'h') return sum + value * 3600;
+                }
+                return sum;
+              }, 0);
+              if (totalMs >= 60) {
+                durationDisplay = `${Math.floor(totalMs / 60)}m ${totalMs % 60}s`;
+              } else {
+                durationDisplay = `${totalMs}s`;
+              }
+            }
+            
+            return `
+          <tr>
+            <td><strong>${name}</strong></td>
+            <td class="mono">${scenario.executor || 'N/A'}</td>
+            <td class="mono">${vusDisplay}</td>
+            <td class="mono">${durationDisplay}</td>
+          </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+    ` : ''}
 
-    ${httpDurationData && httpWaitingData ? `
-    <div class="section">
-      <h2>📊 Response Time Distribution</h2>
-      <div class="chart-container">
-        <canvas id="responseTimeChart"></canvas>
+    ${config ? `
+    <!-- CONFIGURATION -->
+    <div class="section-header">
+      <h2 class="section-title">Test Configuration</h2>
+    </div>
+    <div class="card" style="margin-bottom: 32px;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
+        ${config.baseUrl ? `
+        <div>
+          <div class="kpi-label">Base URL</div>
+          <div style="font-size: 14px; color: var(--text-primary); margin-top: 4px; font-family: var(--font-mono);">${config.baseUrl}</div>
+        </div>
+        ` : ''}
+        ${config.thresholds ? `
+        <div style="grid-column: 1 / -1;">
+          <div class="kpi-label">Thresholds</div>
+          <div style="margin-top: 8px;">
+            ${Object.entries(config.thresholds).map(([metric, conditions]) => `
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                <span style="font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary);">${metric}:</span>
+                <span style="font-family: var(--font-mono); font-size: 12px; color: var(--text-primary);">${Array.isArray(conditions) ? conditions.join(', ') : conditions}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+        ` : ''}
+        ${config.k6Options ? `
+        <div style="grid-column: 1 / -1;">
+          <div class="kpi-label">k6 Options</div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 8px;">
+            ${config.k6Options.summaryMode ? `<div><span style="font-size: 11px; color: var(--text-secondary);">Summary Mode:</span> <span style="font-size: 12px; font-family: var(--font-mono);">${config.k6Options.summaryMode}</span></div>` : ''}
+            ${config.k6Options.summaryTimeUnit ? `<div><span style="font-size: 11px; color: var(--text-secondary);">Time Unit:</span> <span style="font-size: 12px; font-family: var(--font-mono);">${config.k6Options.summaryTimeUnit}</span></div>` : ''}
+            ${config.k6Options.metricsBackends && config.k6Options.metricsBackends.length > 0 ? `<div><span style="font-size: 11px; color: var(--text-secondary);">Metrics Backends:</span> <span style="font-size: 12px; font-family: var(--font-mono);">${config.k6Options.metricsBackends.map(b => b.type).join(', ')}</span></div>` : ''}
+          </div>
+        </div>
+        ` : ''}
       </div>
     </div>
     ` : ''}
 
-    <div class="section">
-      <h2>✅ Check Results</h2>
+    ${comparison ? `
+    <!-- TREND ANALYSIS -->
+    <div class="section-header">
+      <h2 class="section-title">Performance Trend Analysis</h2>
+    </div>
+    
+    ${(() => {
+      // Parse comparison markdown to extract metrics
+      const lines = comparison.split('\\n');
+      const improvements = [];
+      const degradations = [];
+      let currentSection = null;
+      
+      lines.forEach(line => {
+        if (line.includes('## Top 3 Improvements')) currentSection = 'improvements';
+        else if (line.includes('## Top 3 Degradations')) currentSection = 'degradations';
+        else if (line.startsWith('###')) {
+          const match = line.match(/### \\d+\\. (.+)/);
+          if (match && currentSection) {
+            const metric = match[1];
+            if (currentSection === 'improvements') improvements.push(metric);
+            else degradations.push(metric);
+          }
+        }
+      });
+      
+      return `
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-bottom: 24px;">
+        ${improvements.length > 0 ? `
+        <div class="card" style="border-left: 4px solid var(--color-success-text);">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+            <span style="font-size: 20px;">✅</span>
+            <h3 style="font-size: 14px; font-weight: 600; margin: 0;">Top Improvements</h3>
+          </div>
+          ${improvements.map(metric => `<div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 4px;">• ${metric}</div>`).join('')}
+        </div>
+        ` : ''}
+        ${degradations.length > 0 ? `
+        <div class="card" style="border-left: 4px solid var(--color-danger-text);">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+            <span style="font-size: 20px;">⚠️</span>
+            <h3 style="font-size: 14px; font-weight: 600; margin: 0;">Top Degradations</h3>
+          </div>
+          ${degradations.map(metric => `<div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 4px;">• ${metric}</div>`).join('')}
+        </div>
+        ` : ''}
+      </div>
+      
+      <div class="card" style="margin-bottom: 32px;">
+        <details open>
+          <summary style="cursor: pointer; font-weight: 600; padding: 8px 0; user-select: none;">📊 Detailed Comparison</summary>
+          <div style="margin-top: 12px;">
+            ${(() => {
+              // Convert markdown to basic HTML
+              let html = comparison
+                .replace(/^### (.+)$/gm, '<h4 style="font-size: 14px; font-weight: 600; margin: 16px 0 8px 0; color: var(--text-primary);">$1</h4>')
+                .replace(/^## (.+)$/gm, '<h3 style="font-size: 16px; font-weight: 600; margin: 20px 0 12px 0; color: var(--text-primary);">$1</h3>')
+                .replace(/^# (.+)$/gm, '<h2 style="font-size: 18px; font-weight: 700; margin: 24px 0 16px 0; color: var(--text-primary);">$1</h2>')
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/^- (.+)$/gm, '<div style="margin-left: 16px; margin-bottom: 4px;">• $1</div>')
+                .replace(/^\|(.+)\|$/gm, (match) => {
+                  const cells = match.split('|').filter(c => c.trim());
+                  const isHeader = match.includes('---');
+                  if (isHeader) return '';
+                  const tag = cells[0].trim().match(/^[A-Za-z]/) ? 'th' : 'td';
+                  return '<tr>' + cells.map(c => `<${tag} style="padding: 8px; border: 1px solid var(--border-color); text-align: left;">${c.trim()}</${tag}>`).join('') + '</tr>';
+                })
+                .replace(/(<tr>.*<\/tr>)/s, '<table style="width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px;">$1</table>')
+                .split('\n')
+                .map(line => line.trim() ? line : '<br>')
+                .join('\n');
+              return html;
+            })()}
+          </div>
+        </details>
+      </div>
+      `;
+    })()}
+    ` : ''}
+
+    <!-- CHART -->
+    ${httpDurationData ? `
+    <div class="section-header">
+      <h2 class="section-title">Response Time Distribution</h2>
+    </div>
+    <div class="chart-container">
+      <canvas id="mainChart"></canvas>
+    </div>` : ''}
+
+    <!-- CHECKS TABLE -->
+    <div class="section-header">
+      <h2 class="section-title">Validation Checks</h2>
+    </div>
+    <div class="table-container">
       <table>
         <thead>
           <tr>
-            <th>Check Name</th>
-            <th>Status</th>
-            <th>Passed</th>
-            <th>Failed</th>
-            <th>Total</th>
-            <th>Success Rate</th>
+            <th style="width: 40%">Assertion</th>
+            <th style="width: 15%">Result</th>
+            <th style="width: 15%">Count</th>
+            <th style="width: 30%">Success Rate</th>
           </tr>
         </thead>
         <tbody>
           ${checkStats.map(check => `
-            <tr>
-              <td><strong>${check.name}</strong></td>
-              <td>
-                <span class="badge ${check.failed === 0 ? 'success' : 'danger'}">
-                  ${check.failed === 0 ? '✓ PASS' : '✗ FAIL'}
-                </span>
-              </td>
-              <td>${check.passed}</td>
-              <td>${check.failed}</td>
-              <td>${check.total}</td>
-              <td>
-                <div class="progress-bar">
-                  <div class="progress-fill" style="width: ${check.rate}%"></div>
-                </div>
-                ${check.rate}%
-              </td>
-            </tr>
-          `).join('')}
+          <tr>
+            <td><strong>${check.name}</strong></td>
+            <td><span class="badge ${check.failed === 0 ? 'badge-success' : 'badge-danger'}">${check.failed === 0 ? 'PASS' : 'FAIL'}</span></td>
+            <td class="mono">${check.total}</td>
+            <td>
+              <div style="display:flex; align-items:center; gap:10px;">
+                <div class="progress-bg"><div class="progress-fill" style="width: ${check.rate}%; background: ${check.failed > 0 ? '#DC2626' : 'var(--color-success-text)'}"></div></div>
+                <span class="mono">${check.rate}%</span>
+              </div>
+            </td>
+          </tr>`).join('')}
         </tbody>
       </table>
     </div>
 
-    <div class="section">
-      <h2>📈 Overall Performance Metrics</h2>
+    <!-- ENDPOINT ANALYSIS (Restored) -->
+    <div class="section-header"><h2 class="section-title">Endpoint Analysis</h2></div>
+    ${groupedMetricsHTML || '<div style="padding:20px; color:var(--text-secondary)">No grouped metrics found. Ensure your k6 script uses tags.name or tags.group</div>'}
+
+    <!-- METRICS TABLE -->
+     <div class="section-header"><h2 class="section-title">Global Metrics</h2></div>
+    <div class="table-container">
       <table>
         <thead>
           <tr>
             <th>Metric</th>
             <th>Min</th>
             <th>Avg</th>
-            <th>Median</th>
-            <th>P90</th>
             <th>P95</th>
             <th>Max</th>
           </tr>
         </thead>
         <tbody>
-          ${metricStats.map(metric => {
-            const isViolation = (metric.name === 'http_req_duration' && metric.stats.p95 > thresholds.http_req_duration_p95) ||
-                               (metric.name === 'http_req_waiting' && metric.stats.p95 > thresholds.http_req_waiting_p95);
-            return `
-            <tr class="${isViolation ? 'violation-row' : ''}">
-              <td><strong>${metric.name}</strong></td>
-              <td>${metric.stats.min.toFixed(2)}</td>
-              <td>${metric.stats.avg.toFixed(2)}</td>
-              <td>${metric.stats.median.toFixed(2)}</td>
-              <td>${metric.stats.p90.toFixed(2)}</td>
-              <td class="${isViolation ? 'violation' : ''}">${metric.stats.p95.toFixed(2)}</td>
-              <td>${metric.stats.max.toFixed(2)}</td>
-            </tr>
-          `}).join('')}
+          ${Object.entries(metrics)
+            .filter(([name]) => !name.startsWith('data_') && name !== 'checks')
+            .map(([name, data]) => {
+              const stats = calculateStats(data.values);
+              if (!stats) return '';
+              const isViolation = (name === 'http_req_duration' && stats.p95 > thresholds.http_req_duration_p95);
+              return `
+              <tr style="${isViolation ? 'background:#FEF2F2' : ''}">
+                <td>
+                  ${name}
+                  ${isViolation ? '<span style="color:#DC2626; font-size:10px; font-weight:bold; margin-left:5px">⚠️ SLOW</span>' : ''}
+                </td>
+                <td class="mono">${stats.min.toFixed(2)}</td>
+                <td class="mono">${stats.avg.toFixed(2)}</td>
+                <td class="mono ${isViolation ? 'text-danger' : ''}">${stats.p95.toFixed(2)}</td>
+                <td class="mono">${stats.max.toFixed(2)}</td>
+              </tr>`;
+            }).join('')}
         </tbody>
       </table>
     </div>
-
-    ${groupedMetricsHTML}
+    
+    <!-- SCREENSHOTS -->
+    ${screenshots.length > 0 ? `
+    <div class="section-header"><h2 class="section-title">Artifacts & Screenshots</h2></div>
+    <div class="card">
+      <div class="screenshots-grid">
+        ${screenshots.map(shot => `
+          <div class="screenshot-item">
+            <a href="./${shot}" target="_blank"><img src="./${shot}" loading="lazy" /></a>
+            <div class="screenshot-name">${shot}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>` : ''}
 
     <div class="footer">
-      <div class="logo">⚡ k6 Enterprise Framework</div>
-      <p>Generated on ${new Date().toLocaleString()}</p>
-      <p style="margin-top: 10px; opacity: 0.7;">Professional Load Testing & Performance Analysis</p>
+      Generated by k6 Enterprise Report • ${new Date().toLocaleString()}
     </div>
   </div>
 
-    ${screenshots && screenshots.length > 0 ? `
-    <div class="container" style="margin-top: 30px;">
-      <div class="card">
-        <div class="card-header">
-          <h2>📸 Browser Screenshots</h2>
-        </div>
-        <div class="screenshots-grid">
-          ${screenshots.map(shot => `
-            <div class="screenshot-item">
-              <a href="./${shot}" target="_blank">
-                <img src="./${shot}" alt="${shot}" loading="lazy" />
-              </a>
-              <div class="screenshot-name">${shot}</div>
-            </div>
-          `).join('')}
-        </div>
-      </div>
-    </div>
-    ` : ''}
-
   <script>
-    ${httpDurationData && httpWaitingData ? `
-    // Response Time Chart
-    const ctx = document.getElementById('responseTimeChart').getContext('2d');
+    ${httpDurationData ? `
+    const ctx = document.getElementById('mainChart').getContext('2d');
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    Chart.defaults.color = '#6B7280';
     new Chart(ctx, {
       type: 'bar',
       data: {
         labels: ['Min', 'Avg', 'Median', 'P90', 'P95', 'P99', 'Max'],
         datasets: [
           {
-            label: 'Request Duration (ms)',
+            label: 'Req Duration',
             data: [${httpDurationData.min}, ${httpDurationData.avg}, ${httpDurationData.median}, ${httpDurationData.p90}, ${httpDurationData.p95}, ${httpDurationData.p99}, ${httpDurationData.max}],
-            backgroundColor: 'rgba(102, 126, 234, 0.6)',
-            borderColor: 'rgba(102, 126, 234, 1)',
-            borderWidth: 2
+            backgroundColor: '#2563EB', borderRadius: 4, barPercentage: 0.5,
           },
           {
-            label: 'Waiting Time / TTFB (ms)',
-            data: [${httpWaitingData.min}, ${httpWaitingData.avg}, ${httpWaitingData.median}, ${httpWaitingData.p90}, ${httpWaitingData.p95}, ${httpWaitingData.p99}, ${httpWaitingData.max}],
-            backgroundColor: 'rgba(16, 185, 129, 0.6)',
-            borderColor: 'rgba(16, 185, 129, 1)',
-            borderWidth: 2
+            label: 'TTFB',
+            data: [${httpWaitingData ? httpWaitingData.min : 0}, ${httpWaitingData ? httpWaitingData.avg : 0}, ${httpWaitingData ? httpWaitingData.median : 0}, ${httpWaitingData ? httpWaitingData.p90 : 0}, ${httpWaitingData ? httpWaitingData.p95 : 0}, ${httpWaitingData ? httpWaitingData.p99 : 0}, ${httpWaitingData ? httpWaitingData.max : 0}],
+            backgroundColor: '#10B981', borderRadius: 4, barPercentage: 0.5, hidden: true
           }
         ]
       },
       options: {
-        responsive: true,
-        maintainAspectRatio: false,
+        responsive: true, maintainAspectRatio: false,
         plugins: {
-          legend: {
-            position: 'top',
-          },
-          title: {
-            display: true,
-            text: 'HTTP Request Performance Breakdown',
-            font: {
-              size: 16
-            }
-          }
+          legend: { position: 'top', align: 'end', labels: { usePointStyle: true, boxWidth: 6 } },
+          tooltip: { backgroundColor: '#111827', padding: 10, cornerRadius: 4, displayColors: false, callbacks: { label: (c) => c.raw.toFixed(2) + ' ms' } }
         },
         scales: {
-          y: {
-            beginAtZero: true,
-            title: {
-              display: true,
-              text: 'Time (ms)'
-            }
-          }
+          y: { grid: { color: '#F3F4F6', drawBorder: false }, beginAtZero: true },
+          x: { grid: { display: false } }
         }
       }
     });
@@ -1076,9 +936,166 @@ async function main() {
     console.warn('Failed to scan for screenshots:', e);
   }
 
-  const html = generateHTML(metrics, checks, testInfo, groupedMetrics, test, client, k6Dashboard, k6Log, k6Summary, screenshots);
-  
+  // Load configuration file if provided
+  let config = null;
+  let scenarios = null;
+  if (configPath) {
+    try {
+      const configFullPath = path.resolve(configPath);
+      if (fs.existsSync(configFullPath)) {
+        config = await fs.readJson(configFullPath);
+        scenarios = config.scenarios || null;
+        console.log('📝 Loaded configuration from:', configFullPath);
+      }
+    } catch (e) {
+      console.warn('Failed to load config file:', e);
+    }
+  }
+
+  // Load comparison markdown if provided
+  let comparison = null;
+  if (comparisonPath) {
+    try {
+      const comparisonFullPath = path.resolve(comparisonPath);
+      if (fs.existsSync(comparisonFullPath)) {
+        comparison = await fs.readFile(comparisonFullPath, 'utf-8');
+        console.log('📊 Loaded comparison from:', comparisonFullPath);
+      }
+    } catch (e) {
+      console.warn('Failed to load comparison file:', e);
+    }
+  } else {
+    // Try to find the latest comparison file in the report directory
+    try {
+      if (fs.existsSync(reportDir)) {
+        const files = fs.readdirSync(reportDir);
+        const comparisonFiles = files
+          .filter(file => file.startsWith('comparison-') && file.endsWith('.md'))
+          .sort()
+          .reverse();
+        
+        if (comparisonFiles.length > 0) {
+          const latestComparison = path.join(reportDir, comparisonFiles[0]);
+          comparison = await fs.readFile(latestComparison, 'utf-8');
+          console.log('📊 Auto-loaded latest comparison:', comparisonFiles[0]);
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to auto-load comparison file:', e);
+    }
+  }
+
+  // Determine file names for links
+  let comparisonFileName = null;
+  let metadataFileName = null;
+  let summaryJsonFileName = null;
+
+  // Find comparison file
+  try {
+    if (fs.existsSync(reportDir)) {
+      const files = fs.readdirSync(reportDir);
+      const comparisonFiles = files
+        .filter(file => file.startsWith('comparison-') && file.endsWith('.md'))
+        .sort()
+        .reverse();
+      
+      if (comparisonFiles.length > 0) {
+        comparisonFileName = comparisonFiles[0];
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to find comparison file:', e);
+  }
+
+  // Metadata and summary JSON will be created after HTML generation
   const outputPath = path.resolve(output);
+  const outputBasename = path.basename(outputPath, '.html');
+  metadataFileName = `${outputBasename}_metadata.json`;
+  
+  // Find summary JSON file
+  try {
+    if (fs.existsSync(reportDir)) {
+      const files = fs.readdirSync(reportDir);
+      const summaryFiles = files
+        .filter(file => file.startsWith('k6-summary-') && file.endsWith('.json'))
+        .sort()
+        .reverse();
+      
+      if (summaryFiles.length > 0) {
+        summaryJsonFileName = summaryFiles[0];
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to find summary JSON file:', e);
+  }
+
+  // Parse k6 text summary for scenario metrics if available
+  let scenarioMetrics = null;
+  if (k6Summary) {
+    try {
+      const summaryPath = path.join(reportDir, k6Summary);
+      if (fs.existsSync(summaryPath)) {
+        const summaryContent = await fs.readFile(summaryPath, 'utf-8');
+        console.log('📊 Parsing scenario metrics from summary...');
+        
+        scenarioMetrics = {};
+        const lines = summaryContent.split('\n');
+        let currentScenario = null;
+        
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i].trim();
+          
+          // Detect scenario header
+          if (line.includes('█ SCENARIO:')) {
+            currentScenario = line.split('█ SCENARIO:')[1].trim();
+            scenarioMetrics[currentScenario] = {};
+            continue;
+          }
+          
+          if (currentScenario && scenarioMetrics[currentScenario]) {
+            // Parse metrics
+            if (line.startsWith('checks_total')) {
+              const parts = line.split(':')[1].trim().split(/\s+/);
+              scenarioMetrics[currentScenario].checksTotal = parseInt(parts[0]);
+            } else if (line.startsWith('checks_succeeded')) {
+              const match = line.match(/(\d+) out of (\d+)/);
+              if (match) scenarioMetrics[currentScenario].checksPassed = parseInt(match[1]);
+            } else if (line.startsWith('checks_failed')) {
+              const match = line.match(/(\d+) out of (\d+)/);
+              if (match) scenarioMetrics[currentScenario].checksFailed = parseInt(match[1]);
+            } else if (line.startsWith('http_reqs')) {
+               const parts = line.split(':')[1].trim().split(/\s+/);
+               if (parts.length > 1) scenarioMetrics[currentScenario].reqsPerSec = parseFloat(parts[1].replace('/s', ''));
+            } else if (line.startsWith('http_req_duration')) {
+              const metrics = {};
+              const parts = line.split(':')[1].trim().split(/\s+/);
+              parts.forEach(p => {
+                const [k, v] = p.split('=');
+                if (k && v) metrics[k] = parseFloat(v.replace('ms', ''));
+              });
+              scenarioMetrics[currentScenario].httpReqDuration = metrics;
+            } else if (line.startsWith('http_req_failed')) {
+               const match = line.match(/(\d+) out of (\d+)/);
+               if (match) {
+                 scenarioMetrics[currentScenario].httpReqFailed = {
+                   fails: parseInt(match[1]),
+                   total: parseInt(match[2])
+                 };
+               }
+            }
+          }
+        }
+        
+        if (Object.keys(scenarioMetrics).length === 0) {
+          scenarioMetrics = null;
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to parse scenario metrics:', e);
+    }
+  }
+
+  const html = generateHTML(metrics, checks, testInfo, groupedMetrics, test, client, k6Dashboard, k6Log, k6Summary, screenshots, config, comparison, scenarios, comparisonFileName, metadataFileName, summaryJsonFileName, scenarioMetrics);
   
   // Ensure directory exists
   await fs.ensureDir(path.dirname(outputPath));

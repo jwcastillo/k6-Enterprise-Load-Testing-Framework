@@ -20,7 +20,7 @@ We take the security of k6 Enterprise Framework seriously. If you believe you ha
 - Discuss the vulnerability in public forums or social media
 
 ### Please DO:
-1. **Email us directly** at: security@yourcompany.com (replace with your actual email)
+1. **Email us directly** at: jwcastillo+security@gmail.com
 2. **Include the following information:**
    - Type of vulnerability
    - Full paths of source file(s) related to the vulnerability

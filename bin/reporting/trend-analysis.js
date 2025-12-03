@@ -1,14 +1,8 @@
 #!/usr/bin/env node
+import fs from 'fs';
+import path from 'path';
 
-/**
- * Trend Analysis Tool
- * Compares multiple k6 test runs to identify performance trends
- */
-
-const fs = require('fs');
-const path = require('path');
-
-class TrendAnalyzer {
+export class TrendAnalyzer {
   constructor(reportPaths) {
     this.reports = reportPaths.map(p => this.loadReport(p));
   }
@@ -37,12 +31,12 @@ class TrendAnalyzer {
     const metrics = report.metrics;
     return {
       timestamp: report.timestamp,
-      http_req_duration_p95: metrics.http_req_duration?.values?.['p(95)'] || 0,
-      http_req_duration_avg: metrics.http_req_duration?.values?.avg || 0,
-      http_reqs_rate: metrics.http_reqs?.values?.rate || 0,
-      http_req_failed_rate: (metrics.http_req_failed?.values?.rate || 0) * 100,
-      vus_max: metrics.vus_max?.values?.value || 0,
-      iterations: metrics.iterations?.values?.count || 0
+      http_req_duration_p95: metrics.http_req_duration?.p95 || 0,
+      http_req_duration_avg: metrics.http_req_duration?.avg || 0,
+      http_reqs_rate: metrics.http_reqs?.rate || 0,
+      http_req_failed_rate: (metrics.http_req_failed?.rate || 0) * 100,
+      vus_max: metrics.vus_max?.max || 0,
+      iterations: metrics.iterations?.count || 0
     };
   }
 
@@ -180,67 +174,3 @@ class TrendAnalyzer {
     return md;
   }
 }
-
-// CLI usage
-if (require.main === module) {
-  const args = process.argv.slice(2);
-
-  if (args.length === 0) {
-    console.log(`
-Usage: node bin/trend-analysis.js <report1.json> <report2.json> [report3.json ...]
-
-Or use glob pattern:
-  node bin/trend-analysis.js reports/*/k6-summary-*.json
-
-Options:
-  --output <file>     Save markdown report to file
-  --json              Output as JSON instead of markdown
-
-Example:
-  node bin/trend-analysis.js \\
-    reports/local/test1/k6-summary-*.json \\
-    reports/local/test2/k6-summary-*.json \\
-    --output trend-report.md
-    `);
-    process.exit(0);
-  }
-
-  let outputFile = null;
-  let jsonOutput = false;
-  const reportPaths = [];
-
-  for (let i = 0; i < args.length; i++) {
-    if (args[i] === '--output') {
-      outputFile = args[++i];
-    } else if (args[i] === '--json') {
-      jsonOutput = true;
-    } else {
-      reportPaths.push(args[i]);
-    }
-  }
-
-  const analyzer = new TrendAnalyzer(reportPaths);
-  
-  if (jsonOutput) {
-    const report = analyzer.generateReport();
-    const output = JSON.stringify(report, null, 2);
-    
-    if (outputFile) {
-      fs.writeFileSync(outputFile, output);
-      console.log(`✅ JSON report saved to ${outputFile}`);
-    } else {
-      console.log(output);
-    }
-  } else {
-    const markdown = analyzer.generateMarkdown();
-    
-    if (outputFile) {
-      fs.writeFileSync(outputFile, markdown);
-      console.log(`✅ Markdown report saved to ${outputFile}`);
-    } else {
-      console.log(markdown);
-    }
-  }
-}
-
-module.exports = { TrendAnalyzer };

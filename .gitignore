@@ -9,6 +9,7 @@ reports/
 clients/*/
 !clients/.gitkeep
 !clients/examples/  # Mantener cliente de ejemplo
+!clients/latam/  # Mantener cliente de latam
 
 performance.xml
 repomix-output.xml

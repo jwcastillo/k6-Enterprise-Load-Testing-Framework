@@ -8,6 +8,7 @@
 import fs from 'fs-extra';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import crypto from 'crypto';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -78,7 +79,7 @@ const generators = {
     for (let i = 0; i < count; i++) {
       orders.push({
         id: `order_${String(i + 1).padStart(5, '0')}`,
-        userId: `user_${Math.floor(Math.random() * 100)}`,
+        userId: `user_${crypto.randomInt(0, 100)}`,
         total: parseFloat((Math.random() * 5000 + 50).toFixed(2)),
         status: statuses[Math.floor(Math.random() * statuses.length)],
         createdAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString()

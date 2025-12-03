@@ -1,0 +1,19 @@
+# Ignore sensitive data
+*.env
+*.key
+*.pem
+secrets/
+
+# Ignore generated reports (these go to reports/ in root)
+reports/
+*.html
+*.json
+*.log
+
+# Ignore temporary files
+*.tmp
+*.temp
+.DS_Store
+
+# Ignore node_modules if accidentally copied
+node_modules/

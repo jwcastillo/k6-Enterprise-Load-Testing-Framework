@@ -1,0 +1,91 @@
+# Example k6 Enterprise Framework Configuration (YAML)
+
+# Base URL for the API under test
+baseUrl: https://api.example.com
+
+# Test scenarios configuration
+scenarios:
+  # Constant VUs scenario - maintains fixed number of virtual users
+  default:
+    executor: constant-vus
+    vus: 10
+    duration: 30s
+
+  # Ramping VUs scenario - gradually increases/decreases virtual users
+  ramp:
+    executor: ramping-vus
+    startVUs: 0
+    stages:
+      - target: 10
+        duration: 30s
+      - target: 10
+        duration: 1m
+      - target: 0
+        duration: 30s
+
+  # Ramping arrival rate - controls request rate
+  stress:
+    executor: ramping-arrival-rate
+    startRate: 50
+    timeUnit: 1s
+    preAllocatedVUs: 50
+    maxVUs: 100
+    stages:
+      - target: 200
+        duration: 30s
+      - target: 200
+        duration: 1m
+      - target: 0
+        duration: 30s
+
+  # Browser scenario - for UI testing
+  browser:
+    executor: shared-iterations
+    vus: 1
+    iterations: 1
+    maxDuration: 10m
+    options:
+      browser:
+        type: chromium
+
+# Performance thresholds
+thresholds:
+  http_req_duration:
+    - p(95)<500
+    - p(99)<1000
+  http_req_failed:
+    - rate<0.01
+  checks:
+    - rate>0.95
+  browser_web_vital_lcp:
+    - p(95)<2000
+
+# Custom tags for test runs
+tags:
+  environment: staging
+  team: qa
+  version: v1.0.0
+
+# Environment variables
+env:
+  API_KEY: your-api-key-here
+  DEBUG: false
+
+# Authentication configuration
+auth:
+  type: bearer
+  token: ${API_TOKEN}
+
+# Default HTTP headers
+headers:
+  User-Agent: k6-enterprise-framework/1.0
+  Accept: application/json
+
+# Request timeout
+timeout: 30s
+
+# Retry configuration
+retries:
+  maxRetries: 3
+  backoffMultiplier: 2
+  initialDelay: 100

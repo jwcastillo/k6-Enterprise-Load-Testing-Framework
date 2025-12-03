@@ -68,7 +68,7 @@ echo -e "${GREEN}🔍 Validating configuration...${NC}"
 
 # Validate configuration before running test
 if [ -f "bin/cli/validate-config.js" ]; then
-  if ! node bin/cli/validate-config.js --client="$CLIENT" --env="$ENV" 2>/dev/null; then
+  if ! node bin/cli/validate-config.js --client="$CLIENT" --env="$ENV"; then
     echo -e "${RED}❌ Configuration validation failed${NC}"
     echo -e "${YELLOW}💡 Fix the configuration errors above before running tests${NC}"
     exit 1

@@ -118,6 +118,19 @@ run:test:
   when: manual
   only:
     - web
+
+test:smoke:
+  <<: *test_template
+  stage: test
+  needs: [build]
+  variables:
+    CLIENT: "latam"
+    TEST: "example.ts"
+    ENV: "default"
+  only:
+    - branches
+    - merge_requests
+
 sast:
   stage: test
 include:

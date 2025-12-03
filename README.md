@@ -1,6 +1,6 @@
 # k6 Enterprise Load Testing Framework
 
-[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](https://github.com/yourusername/k6-enterprise-framework)
+[![Version](https://img.shields.io/badge/version-1.10.0-blue.svg)](https://github.com/yourusername/k6-enterprise-framework)
 [![License](https://img.shields.io/badge/license-ISC-green.svg)](LICENSE)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/yourusername/k6-enterprise-framework/actions)
 
@@ -16,14 +16,14 @@ npm install
 npm run build
 
 # Run a test
-node dist/core/cli.js --client=local --test=example.ts
+node dist/core/cli.js --client=examples --test=example.ts
 ```
 
 ## 📚 Documentation
 
 ### Core Documentation
 - **[Framework Summary](docs/FRAMEWORK_SUMMARY.md)** - Complete feature overview
-- **[Examples Guide](docs/EXAMPLES.md)** - All 13 example scenarios
+- **[Examples Guide](docs/EXAMPLES.md)** - All 15 example scenarios
 - **[Configuration Validation](docs/CONFIG_VALIDATION.md)** - Config validation with JSON Schema
 
 ### Architecture & Patterns
@@ -77,7 +77,10 @@ npm run security:fix
 - ✅ **Multi-Client Architecture** - Complete isolation per client
 - ✅ **Config-Driven Tests** - Define tests in JSON without writing code
 - ✅ **4 Test Types** - Unit, Flow, Browser, and Mixed tests
-- ✅ **Rich Helper Library** - Date, Request, Data, and Validation helpers
+- ✅ **Rich Helper Library** - Date, Request, Data, Validation, Header, and Structured Logger helpers
+- ✅ **Header Management** - Standardized HTTP headers (X-Correlation-ID, X-Trace-ID, etc.)
+- ✅ **Weighted Switch** - Probabilistic execution for realistic scenarios
+- ✅ **Structured Logging** - JSON-formatted logs for external ingestion
 - ✅ **Redis Integration** - Share data between VUs, cache setup data
 - ✅ **CI/CD Ready** - GitHub Actions & GitLab CI support
 - ✅ **TypeScript** - Full ES module support

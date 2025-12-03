@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.0] - 2025-12-03
+
+### Added
+- **HeaderHelper**: Standardized HTTP header management system
+  - `HeaderHelper.getStandardHeaders()` - Generate standard headers (X-Correlation-ID, X-Trace-ID, User-Agent, etc.)
+  - `HeaderHelper.mergeHeaders()` - Merge header objects
+  - `RequestHelper.applyStandardHeaders()` - Apply standard headers to requests
+- **Weighted Switch**: Probabilistic execution utility in DataHelper
+  - `DataHelper.weightedSwitch()` - Execute functions based on probability weights
+  - Useful for realistic load testing scenarios (e.g., 70% browse, 20% cart, 10% checkout)
+- **Structured Logger**: JSON-formatted logging for external ingestion
+  - `StructuredLogger.logRequest()` - Log HTTP requests in JSON format
+  - `StructuredLogger.logEvent()` - Log custom events
+  - `StructuredLogger.logError()` - Log errors with context
+  - Enable with `K6_STRUCTURED_LOGS=true` environment variable
+
 ## [1.9.1] - 2025-12-03
 
 ### Fixed

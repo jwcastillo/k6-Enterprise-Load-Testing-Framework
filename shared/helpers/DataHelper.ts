@@ -7,8 +7,9 @@ export class DataHelper {
    * Generate random string
    */
   public static randomString(length: number = 10): string {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let result = '';
+    const chars =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let result = "";
     for (let i = 0; i < length; i++) {
       result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
@@ -25,14 +26,14 @@ export class DataHelper {
   /**
    * Generate random email
    */
-  public static randomEmail(domain: string = 'test.com'): string {
+  public static randomEmail(domain: string = "test.com"): string {
     return `user_${this.randomString(8)}@${domain}`;
   }
 
   /**
    * Generate random phone number
    */
-  public static randomPhone(countryCode: string = '+1'): string {
+  public static randomPhone(countryCode: string = "+1"): string {
     const areaCode = this.randomInt(200, 999);
     const prefix = this.randomInt(200, 999);
     const lineNumber = this.randomInt(1000, 9999);
@@ -43,8 +44,9 @@ export class DataHelper {
    * Generate random password
    */
   public static randomPassword(length: number = 12): string {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
-    let result = '';
+    const chars =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+    let result = "";
     for (let i = 0; i < length; i++) {
       result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
@@ -73,7 +75,11 @@ export class DataHelper {
   /**
    * Generate array of unique random numbers
    */
-  public static uniqueRandomInts(count: number, min: number, max: number): number[] {
+  public static uniqueRandomInts(
+    count: number,
+    min: number,
+    max: number
+  ): number[] {
     const numbers: number[] = [];
     while (numbers.length < count) {
       const num = this.randomInt(min, max);
@@ -94,16 +100,23 @@ export class DataHelper {
   /**
    * Merge objects deeply
    */
-  public static merge<T extends Record<string, any>>(target: T, ...sources: Partial<T>[]): T {
+  public static merge<T extends Record<string, any>>(
+    target: T,
+    ...sources: Partial<T>[]
+  ): T {
     const result = this.clone(target);
-    
+
     for (const source of sources) {
       for (const key in source) {
         if (source.hasOwnProperty(key)) {
           const sourceValue = source[key];
           const targetValue = result[key];
-          
-          if (sourceValue && typeof sourceValue === 'object' && !Array.isArray(sourceValue)) {
+
+          if (
+            sourceValue &&
+            typeof sourceValue === "object" &&
+            !Array.isArray(sourceValue)
+          ) {
             result[key] = this.merge(targetValue || {}, sourceValue) as any;
           } else {
             result[key] = sourceValue as any;
@@ -111,7 +124,7 @@ export class DataHelper {
         }
       }
     }
-    
+
     return result;
   }
 
@@ -119,9 +132,9 @@ export class DataHelper {
    * Generate UUID v4
    */
   public static uuid(): string {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-      const r = Math.random() * 16 | 0;
-      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+      const r = (Math.random() * 16) | 0;
+      const v = c === "x" ? r : (r & 0x3) | 0x8;
       return v.toString(16);
     });
   }
@@ -129,15 +142,15 @@ export class DataHelper {
   /**
    * Format number with thousand separators
    */
-  public static formatNumber(num: number, separator: string = ','): string {
+  public static formatNumber(num: number, separator: string = ","): string {
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, separator);
   }
 
   /**
    * Parse CSV line
    */
-  public static parseCsvLine(line: string, delimiter: string = ','): string[] {
-    return line.split(delimiter).map(field => field.trim());
+  public static parseCsvLine(line: string, delimiter: string = ","): string[] {
+    return line.split(delimiter).map((field) => field.trim());
   }
 
   /**
@@ -147,10 +160,12 @@ export class DataHelper {
     const parts: string[] = [];
     for (const [key, value] of Object.entries(obj)) {
       if (value !== null && value !== undefined) {
-        parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+        parts.push(
+          `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`
+        );
       }
     }
-    return parts.join('&');
+    return parts.join("&");
   }
 
   /**
@@ -171,16 +186,38 @@ export class DataHelper {
    * Generate random person name
    */
   public static randomName(): { first: string; last: string; full: string } {
-    const firstNames = ['John', 'Jane', 'Michael', 'Sarah', 'David', 'Emily', 'Robert', 'Lisa', 'James', 'Mary'];
-    const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez'];
-    
+    const firstNames = [
+      "John",
+      "Jane",
+      "Michael",
+      "Sarah",
+      "David",
+      "Emily",
+      "Robert",
+      "Lisa",
+      "James",
+      "Mary",
+    ];
+    const lastNames = [
+      "Smith",
+      "Johnson",
+      "Williams",
+      "Brown",
+      "Jones",
+      "Garcia",
+      "Miller",
+      "Davis",
+      "Rodriguez",
+      "Martinez",
+    ];
+
     const first = this.randomItem(firstNames);
     const last = this.randomItem(lastNames);
-    
+
     return {
       first,
       last,
-      full: `${first} ${last}`
+      full: `${first} ${last}`,
     };
   }
 
@@ -188,9 +225,23 @@ export class DataHelper {
    * Generate random company name
    */
   public static randomCompany(): string {
-    const prefixes = ['Tech', 'Global', 'Digital', 'Smart', 'Innovative', 'Advanced'];
-    const suffixes = ['Solutions', 'Systems', 'Technologies', 'Enterprises', 'Group', 'Corp'];
-    
+    const prefixes = [
+      "Tech",
+      "Global",
+      "Digital",
+      "Smart",
+      "Innovative",
+      "Advanced",
+    ];
+    const suffixes = [
+      "Solutions",
+      "Systems",
+      "Technologies",
+      "Enterprises",
+      "Group",
+      "Corp",
+    ];
+
     return `${this.randomItem(prefixes)} ${this.randomItem(suffixes)}`;
   }
 
@@ -204,16 +255,22 @@ export class DataHelper {
     zipCode: string;
     country: string;
   } {
-    const streets = ['Main St', 'Oak Ave', 'Maple Dr', 'Park Rd', 'Washington Blvd'];
-    const cities = ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix'];
-    const states = ['NY', 'CA', 'IL', 'TX', 'AZ'];
-    
+    const streets = [
+      "Main St",
+      "Oak Ave",
+      "Maple Dr",
+      "Park Rd",
+      "Washington Blvd",
+    ];
+    const cities = ["New York", "Los Angeles", "Chicago", "Houston", "Phoenix"];
+    const states = ["NY", "CA", "IL", "TX", "AZ"];
+
     return {
       street: `${this.randomInt(100, 9999)} ${this.randomItem(streets)}`,
       city: this.randomItem(cities),
       state: this.randomItem(states),
       zipCode: String(this.randomInt(10000, 99999)),
-      country: 'USA'
+      country: "USA",
     };
   }
 
@@ -227,16 +284,22 @@ export class DataHelper {
     category: string;
     inStock: boolean;
   } {
-    const adjectives = ['Premium', 'Deluxe', 'Professional', 'Standard', 'Basic'];
-    const products = ['Laptop', 'Mouse', 'Keyboard', 'Monitor', 'Headphones'];
-    const categories = ['electronics', 'accessories', 'peripherals'];
-    
+    const adjectives = [
+      "Premium",
+      "Deluxe",
+      "Professional",
+      "Standard",
+      "Basic",
+    ];
+    const products = ["Laptop", "Mouse", "Keyboard", "Monitor", "Headphones"];
+    const categories = ["electronics", "accessories", "peripherals"];
+
     return {
       id: `prod_${this.randomString(8)}`,
       name: `${this.randomItem(adjectives)} ${this.randomItem(products)}`,
       price: this.randomPrice(10, 2000),
       category: this.randomItem(categories),
-      inStock: this.randomBoolean()
+      inStock: this.randomBoolean(),
     };
   }
 
@@ -250,44 +313,44 @@ export class DataHelper {
     expiry: string;
   } {
     // Generate 15 random digits
-    let cardNumber = '';
+    let cardNumber = "";
     for (let i = 0; i < 15; i++) {
       cardNumber += this.randomInt(0, 9);
     }
-    
+
     // Calculate Luhn check digit
     let sum = 0;
     let isEven = true;
-    
+
     for (let i = cardNumber.length - 1; i >= 0; i--) {
       let digit = parseInt(cardNumber[i]);
-      
+
       if (isEven) {
         digit *= 2;
         if (digit > 9) {
           digit -= 9;
         }
       }
-      
+
       sum += digit;
       isEven = !isEven;
     }
-    
+
     const checkDigit = (10 - (sum % 10)) % 10;
     cardNumber += checkDigit;
-    
+
     // Format as XXXX XXXX XXXX XXXX
-    const formatted = cardNumber.match(/.{1,4}/g)?.join(' ') || cardNumber;
-    
+    const formatted = cardNumber.match(/.{1,4}/g)?.join(" ") || cardNumber;
+
     // Generate CVV and expiry
     const cvv = String(this.randomInt(100, 999));
-    const month = String(this.randomInt(1, 12)).padStart(2, '0');
+    const month = String(this.randomInt(1, 12)).padStart(2, "0");
     const year = String(this.randomInt(25, 30));
-    
+
     return {
       number: formatted,
       cvv,
-      expiry: `${month}/${year}`
+      expiry: `${month}/${year}`,
     };
   }
 
@@ -321,7 +384,67 @@ export class DataHelper {
       password: this.randomPassword(),
       name,
       phone: this.randomPhone(),
-      address: this.randomAddress()
+      address: this.randomAddress(),
     };
+  }
+
+  /**
+   * Weighted switch - Execute functions based on probability weights
+   * @param weightedFuncs Array of [weight, function] tuples where weights sum to 1.0
+   * @returns A function that returns one of the provided functions based on weights
+   *
+   * @example
+   * const action = DataHelper.weightedSwitch([
+   *   [0.7, () => console.log('Browse')],
+   *   [0.2, () => console.log('Add to cart')],
+   *   [0.1, () => console.log('Checkout')]
+   * ]);
+   * action(); // Executes one function based on probability
+   */
+  public static weightedSwitch<T extends () => any>(
+    weightedFuncs: Array<[number, T]>
+  ): T {
+    interface FuncInterval {
+      start: number;
+      end: number;
+      func: T;
+    }
+
+    const funcIntervals: FuncInterval[] = [];
+    let weightSum = 0;
+
+    for (let i = 0; i < weightedFuncs.length; i++) {
+      funcIntervals.push({
+        start: weightSum,
+        end: weightSum + weightedFuncs[i][0],
+        func: weightedFuncs[i][1],
+      });
+      weightSum += weightedFuncs[i][0];
+    }
+
+    if (Math.abs(weightSum - 1) > 0.0001) {
+      throw new Error(
+        `The sum of function weights should be 1.0 (100%), but is ${weightSum}`
+      );
+    }
+
+    const val = Math.random();
+    let min = 0;
+    let max = funcIntervals.length - 1;
+
+    while (min <= max) {
+      const guess = Math.floor((max + min) / 2);
+
+      if (val >= funcIntervals[guess].end) {
+        min = guess + 1;
+      } else if (val < funcIntervals[guess].start) {
+        max = guess - 1;
+      } else {
+        return funcIntervals[guess].func;
+      }
+    }
+
+    // Fallback (should never reach here if weights sum to 1.0)
+    return funcIntervals[funcIntervals.length - 1].func;
   }
 }

@@ -102,9 +102,24 @@ reports/{client}/{test}/
 
 ## 🔧 Configuration
 
+### Client Configuration (JSON)
+
+Each client has its own configuration in `clients/{client}/config/`:
+
 ```json
 {
   "baseUrl": "https://api.example.com",
+  "scenarios": {
+    "default": {
+      "executor": "constant-vus",
+      "vus": 10,
+      "duration": "30s"
+    }
+  },
+  "thresholds": {
+    "http_req_duration": ["p(95)<500"],
+    "checks": ["rate>0.95"]
+  },
   "k6Options": {
     "summaryMode": "full",
     "summaryTimeUnit": "ms",
@@ -113,6 +128,25 @@ reports/{client}/{test}/
     ]
   }
 }
+```
+
+### Environment Variables
+
+```bash
+# Enable debug logging
+K6_DEBUG=true
+
+# Enable structured JSON logs
+K6_STRUCTURED_LOGS=true
+
+# Enable distributed tracing
+K6_TEMPO_ENABLED=true
+
+# Enable profiling
+K6_PYROSCOPE_ENABLED=true
+
+# Enable chaos testing
+K6_CHAOS_ENABLED=true
 ```
 
 ## 📖 Learn More

@@ -1,7 +1,7 @@
 /**
  * DataHelper - Utility functions for data manipulation and generation
  */
-import crypto from 'crypto';
+import crypto from "crypto";
 export class DataHelper {
   /**
    * Generate random string
@@ -62,7 +62,7 @@ export class DataHelper {
   public static randomItem<T>(array: T[]): T {
     // Use crypto.randomInt to securely pick index
     if (array.length === 0) {
-      throw new Error('Cannot pick random item from empty array');
+      throw new Error("Cannot pick random item from empty array");
     }
     const idx = crypto.randomInt(0, array.length);
     return array[idx];
@@ -143,13 +143,28 @@ export class DataHelper {
     // Use cryptographically secure random values to generate UUID v4
     const bytes = new Uint8Array(16);
     // In browser/k6, window.crypto or globalThis.crypto is available
-    (typeof crypto !== 'undefined' ? crypto : (typeof globalThis !== 'undefined' ? globalThis.crypto : null)).getRandomValues(bytes);
+    // In k6/node/browser environments, try to find a suitable crypto implementation
+    if (typeof crypto !== "undefined" && (crypto as any).getRandomValues) {
+      (crypto as any).getRandomValues(bytes);
+    } else if (
+      typeof globalThis !== "undefined" &&
+      globalThis.crypto &&
+      globalThis.crypto.getRandomValues
+    ) {
+      globalThis.crypto.getRandomValues(bytes);
+    } else {
+      // Fallback for environments where getRandomValues is not available directly on crypto
+      // This might happen in some Node.js versions or specific contexts
+      throw new Error("Secure random number generator not available");
+    }
     // Per RFC4122: set bits for version and `clock_seq_hi_and_reserved`
     bytes[6] = (bytes[6] & 0x0f) | 0x40; // UUID version 4
     bytes[8] = (bytes[8] & 0x3f) | 0x80; // UUID variant 10
     // Convert bytes to UUID string
-    const hex = Array.from(bytes, b => b.toString(16).padStart(2, '0'));
-    return `${hex.slice(0,4).join('')}-${hex.slice(4,6).join('')}-${hex.slice(6,8).join('')}-${hex.slice(8,10).join('')}-${hex.slice(10,16).join('')}`;
+    const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0"));
+    return `${hex.slice(0, 4).join("")}-${hex.slice(4, 6).join("")}-${hex
+      .slice(6, 8)
+      .join("")}-${hex.slice(8, 10).join("")}-${hex.slice(10, 16).join("")}`;
   }
 
   /**

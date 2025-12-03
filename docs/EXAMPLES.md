@@ -14,9 +14,11 @@ This document provides comprehensive documentation for all example test scenario
 8. [Example Test](#example-test)
 9. [File Upload/Download](#file-uploaddownload)
 10. [GraphQL Testing](#graphql-testing)
-11. [Mixed Test](#mixed-test)
-12. [Rate Limiting](#rate-limiting)
-13. [WebSocket Testing](#websocket-testing)
+11. [Header Management Test](#header-management-test)
+12. [Mixed Test](#mixed-test)
+13. [Rate Limiting](#rate-limiting)
+14. [Weighted Switch and Logger Test](#weighted-switch-and-logger-test)
+15. [WebSocket Testing](#websocket-testing)
 
 ---
 
@@ -118,13 +120,13 @@ check(registerRes, {
 
 ### Validation Checks
 
-| Check | Description | Expected |
-|-------|-------------|----------|
-| `user registered successfully` | Registration status code | 201 |
-| `registration returns user id` | Response contains user ID | true |
-| `login successful` | Login status code | 200 |
-| `login returns auth token` | Response contains token | true |
-| `logout successful` | Logout status code | 204 |
+| Check                          | Description               | Expected |
+| ------------------------------ | ------------------------- | -------- |
+| `user registered successfully` | Registration status code  | 201      |
+| `registration returns user id` | Response contains user ID | true     |
+| `login successful`             | Login status code         | 200      |
+| `login returns auth token`     | Response contains token   | true     |
+| `logout successful`            | Logout status code        | 204      |
 
 ### Metrics Collected
 - **HTTP Request Duration**: Time taken for each API call
@@ -521,6 +523,116 @@ Demonstrates GraphQL API testing with queries, variables, and error handling.
 - Valid response data
 - Correct query results
 - Pagination working
+
+---
+
+## Header Management Test
+
+**File**: `clients/examples/scenarios/header-test.ts`
+
+### Purpose
+Verifies the HeaderHelper functionality for standardized HTTP header management.
+
+### Features
+- Standard header generation (X-Correlation-ID, X-Trace-ID, etc.)
+- Header merging with RequestHelper
+- Token-based authentication headers
+- Country and language header support
+
+### Configuration
+```json
+{
+  "vus": 1,
+  "iterations": 1
+}
+```
+
+### Usage
+```bash
+./bin/testing/run-test.sh --client=examples --test=header-test.ts
+```
+
+### Test Checks
+- HeaderHelper generates correlation ID correctly
+- HeaderHelper generates trace ID correctly
+- HeaderHelper generates request ID correctly
+- Authorization header set with Bearer token
+- Country header set correctly
+- Accept-Language header set correctly
+- User-Agent header present
+- RequestHelper applies standard headers
+
+### Expected Results
+- 12/12 checks passed
+- All standard headers present
+- Proper header merging
+- Token authentication working
+
+---
+
+## Weighted Switch and Logger Test
+
+**File**: `clients/examples/scenarios/weighted-logger-test.ts`
+
+### Purpose
+Demonstrates probabilistic execution and structured JSON logging capabilities.
+
+### Features
+- **Weighted Switch**: Execute functions based on probability weights
+- **Structured Logger**: JSON-formatted logging for external systems
+- Distribution validation (70% browse, 20% cart, 10% checkout)
+- Error handling for invalid weights
+
+### Configuration
+```json
+{
+  "vus": 1,
+  "iterations": 1
+}
+```
+
+### Usage
+```bash
+./bin/testing/run-test.sh --client=examples --test=weighted-logger-test.ts
+
+# Enable structured logging
+K6_STRUCTURED_LOGS=true ./bin/testing/run-test.sh --client=examples --test=weighted-logger-test.ts
+```
+
+### Weighted Switch Example
+```typescript
+const action = DataHelper.weightedSwitch([
+  [0.7, () => console.log('Browse')],    // 70% probability
+  [0.2, () => console.log('Add to cart')], // 20% probability
+  [0.1, () => console.log('Checkout')]   // 10% probability
+]);
+action(); // Executes one function based on probability
+```
+
+### Structured Logger Example
+```typescript
+// Log HTTP request
+StructuredLogger.logRequest('POST', url, response, { userId: '123' });
+
+// Log custom event
+StructuredLogger.logEvent('user_action', { action: 'checkout' });
+
+// Log error
+StructuredLogger.logError(error, { context: 'payment' });
+```
+
+### Test Checks
+- Weighted switch: browse distribution ~70%
+- Weighted switch: cart distribution ~20%
+- Weighted switch: checkout distribution ~10%
+- Weighted switch: throws error for invalid weights
+- Structured logger: does not crash
+
+### Expected Results
+- 5/5 checks passed
+- Correct probability distribution
+- Error handling working
+- Structured logs output (when enabled)
 
 ---
 

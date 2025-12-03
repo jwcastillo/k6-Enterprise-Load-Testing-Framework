@@ -1,0 +1,6 @@
+apiVersion: v2
+name: k6-enterprise
+description: A Helm chart for running k6 Enterprise Framework tests on Kubernetes
+type: application
+version: 0.1.0
+appVersion: "1.6.0"

@@ -1,0 +1,44 @@
+{
+  "products": [
+    {
+      "id": "prod_001",
+      "name": "Laptop Pro",
+      "price": 1299.99,
+      "category": "electronics",
+      "stock": 50
+    },
+    {
+      "id": "prod_002",
+      "name": "Wireless Mouse",
+      "price": 29.99,
+      "category": "accessories",
+      "stock": 200
+    },
+    {
+      "id": "prod_003",
+      "name": "USB-C Cable",
+      "price": 19.99,
+      "category": "accessories",
+      "stock": 500
+    },
+    {
+      "id": "prod_004",
+      "name": "Monitor 27\"",
+      "price": 399.99,
+      "category": "electronics",
+      "stock": 75
+    },
+    {
+      "id": "prod_005",
+      "name": "Mechanical Keyboard",
+      "price": 149.99,
+      "category": "accessories",
+      "stock": 120
+    }
+  ],
+  "config": {
+    "tax_rate": 0.08,
+    "shipping_cost": 9.99,
+    "free_shipping_threshold": 50.00
+  }
+}

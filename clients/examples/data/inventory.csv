@@ -1,0 +1,11 @@
+productId,name,category,stock,reorderLevel,lastRestocked
+prod_1,Laptop,electronics,15,5,2025-11-28
+prod_2,Mouse,electronics,50,10,2025-12-01
+prod_3,Keyboard,electronics,30,10,2025-11-30
+prod_4,Monitor,electronics,8,3,2025-11-25
+prod_5,Headphones,audio,25,8,2025-12-02
+prod_6,Speaker,audio,12,5,2025-11-29
+prod_7,Desk,furniture,5,2,2025-11-20
+prod_8,Chair,furniture,7,3,2025-11-22
+prod_9,Lamp,lighting,20,5,2025-12-01
+prod_10,Backpack,accessories,35,10,2025-11-27

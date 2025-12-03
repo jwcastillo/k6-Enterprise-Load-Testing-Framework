@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.env
+*.log
+.DS_Store
+screenshots/
+reports/
+
+clients/*/
+!clients/.gitkeep
+!clients/examples/  # Mantener cliente de ejemplo
+
+performance.xml
+repomix-output.xml

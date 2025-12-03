@@ -1,0 +1,126 @@
+name: Run k6 Tests
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+    inputs:
+      client:
+        description: "Client to test"
+        required: true
+        default: "local"
+        type: choice
+        options:
+          - local
+          - client-a
+      env:
+        description: "Environment"
+        required: true
+        default: "default"
+        type: choice
+        options:
+          - default
+          - staging
+          - prod
+      test:
+        description: "Test file to run (e.g., example.ts)"
+        required: true
+        default: "example.ts"
+      profile:
+        description: "Load profile"
+        required: false
+        default: "smoke"
+        type: choice
+        options:
+          - smoke
+          - load
+          - stress
+          - spike
+
+jobs:
+  run-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Use Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "18.x"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Validate Configuration
+        env:
+          CLIENT: ${{ github.event.inputs.client }}
+          ENV: ${{ github.event.inputs.env }}
+        run: |
+          echo "🔍 Validating configuration..."
+          node bin/cli/validate-config.js --client="$CLIENT" --env="$ENV"
+          echo "✅ Configuration is valid"
+
+      - name: Setup k6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Run k6 test
+        env:
+          CLIENT: ${{ github.event.inputs.client }}
+          TEST: ${{ github.event.inputs.test }}
+          ENV: ${{ github.event.inputs.env }}
+          PROFILE: ${{ github.event.inputs.profile }}
+        run: |
+          echo "🚀 Running k6 test..."
+          echo "   Client: $CLIENT"
+          echo "   Test: $TEST"
+          echo "   Environment: $ENV"
+          echo "   Profile: $PROFILE"
+          echo ""
+
+          node dist/core/cli.js --client="$CLIENT" --test="$TEST" --env="$ENV" || TEST_FAILED=true
+
+          # Display beautiful summary
+          chmod +x bin/test-summary.sh
+          TEST_NAME=$(echo "$TEST" | sed 's/\.ts$//')
+          ./bin/test-summary.sh reports "$CLIENT" "$TEST_NAME" || true
+
+          # Exit with test result
+          if [ "$TEST_FAILED" = "true" ]; then
+            echo "❌ Test failed!"
+            exit 1
+          fi
+
+          echo "✅ Test passed!"
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: k6-reports-${{ github.event.inputs.client }}-${{ github.event.inputs.test }}-${{ github.run_number }}
+          path: |
+            reports/**/*.json
+            reports/**/*.html
+            reports/**/*.txt
+            reports/**/*.log
+            reports/**/*.png
+            reports/**/*.jpg
+            reports/**/*.jpeg
+          retention-days: 30
+
+      - name: Create summary
+        if: always()
+        run: |
+          echo "## 📊 k6 Test Execution Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Client**: ${{ github.event.inputs.client }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Test**: ${{ github.event.inputs.test }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: ${{ github.event.inputs.env }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Profile**: ${{ github.event.inputs.profile }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📥 Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "Download the generated reports from the artifacts section above." >> $GITHUB_STEP_SUMMARY

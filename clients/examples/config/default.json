@@ -1,0 +1,34 @@
+{
+  "baseUrl": "http://localhost:3000",
+  "scenarios": {
+    "baseline": {
+      "executor": "constant-vus",
+      "vus": 1,
+      "duration": "10s",
+      "exec": "default"
+    },
+    "heavy_load": {
+      "executor": "ramping-arrival-rate",
+      "startRate": 50,
+      "timeUnit": "1s",
+      "preAllocatedVUs": 50,
+      "maxVUs": 100,
+      "exec": "default",
+      "stages": [
+        { "target": 200, "duration": "30s" },
+        { "target": 200, "duration": "1m" },
+        { "target": 0, "duration": "30s" }
+      ]
+    },
+    "ecommerce": {
+      "executor": "constant-vus",
+      "vus": 5,
+      "duration": "30s",
+      "exec": "default"
+    }
+  },
+  "thresholds": {
+    "http_req_duration": ["p(95)<100"],
+    "http_req_failed": ["rate<0.01"]
+  }
+}

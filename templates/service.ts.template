@@ -1,0 +1,25 @@
+import { BaseService } from '../../../shared/base-service.js';
+import { RequestHelper } from '../../../shared/helpers/RequestHelper.js';
+
+export class {{ServiceName}} extends BaseService {
+  private requestHelper: RequestHelper;
+
+  constructor(baseUrl: string) {
+    super(baseUrl);
+    this.requestHelper = new RequestHelper(baseUrl);
+  }
+
+  /**
+   * Get example resource
+   */
+  getExample(id: string) {
+    return this.requestHelper.get(`/api/{{resourceName}}/${id}`);
+  }
+
+  /**
+   * Create example resource
+   */
+  createExample(data: any) {
+    return this.requestHelper.post('/api/{{resourceName}}', data);
+  }
+}

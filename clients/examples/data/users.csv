@@ -1,0 +1,11 @@
+username,email,password,role
+john_doe,john@example.com,Pass123!,user
+jane_smith,jane@example.com,Pass456!,admin
+bob_wilson,bob@example.com,Pass789!,user
+alice_jones,alice@example.com,Pass012!,moderator
+charlie_brown,charlie@example.com,Pass345!,user
+diana_prince,diana@example.com,Pass678!,admin
+eve_taylor,eve@example.com,Pass901!,user
+frank_miller,frank@example.com,Pass234!,user
+grace_lee,grace@example.com,Pass567!,moderator
+henry_davis,henry@example.com,Pass890!,user

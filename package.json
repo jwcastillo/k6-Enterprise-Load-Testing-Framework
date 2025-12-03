@@ -1,0 +1,91 @@
+{
+  "name": "k6-enterprise-framework",
+  "version": "1.10.0",
+  "type": "module",
+  "description": "Enterprise-grade k6 load testing framework with multi-client support, Redis integration, and multiple test types",
+  "main": "dist/core/cli.js",
+  "bin": {
+    "k6-runner": "./dist/core/cli.js"
+  },
+  "scripts": {
+    "build": "tsc && node scripts/build/copy-assets.js",
+    "start": "node dist/core/cli.js",
+    "docker:build": "docker-compose build",
+    "docker:run": "docker-compose up",
+    "redis:load": "node scripts/redis/load-redis-data.js",
+    "redis:clean": "node scripts/redis/clean-redis-data.js",
+    "commit": "cz",
+    "version:bump": "./bin/cli/version.sh",
+    "prepare": "husky install || true",
+    "security:audit": "npm audit --audit-level=moderate",
+    "security:fix": "npm audit fix",
+    "mock": "node bin/testing/mock-server.js",
+    "test:parallel": "node bin/testing/run-parallel.js",
+    "generate": "node bin/cli/generate.js",
+    "notify": "node bin/reporting/notify.js",
+    "trend-analysis": "node bin/reporting/trend-analysis.js",
+    "reports:clean": "rm -rf reports/*"
+  },
+  "keywords": [
+    "k6",
+    "load-testing",
+    "performance",
+    "testing",
+    "redis",
+    "docker"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/k6-enterprise-framework.git"
+  },
+  "config": {
+    "commitizen": {
+      "path": "cz-conventional-changelog"
+    }
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^20.1.0",
+    "@commitlint/config-conventional": "^20.0.0",
+    "@types/body-parser": "^1.19.6",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/k6": "^1.4.0",
+    "@types/node": "^24.10.1",
+    "body-parser": "^2.2.1",
+    "chalk": "^5.6.2",
+    "commitizen": "^4.3.1",
+    "cors": "^2.8.5",
+    "cz-conventional-changelog": "^3.0.1",
+    "express": "^5.2.1",
+    "husky": "^9.1.7",
+    "inquirer": "^13.0.2",
+    "k6": "^0.0.0",
+    "lint-staged": "^16.2.7",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "tmp": ">=0.2.4",
+    "@types/fs-extra": "^11.0.4",
+    "@types/glob": "^8.1.0",
+    "@types/js-yaml": "^4.0.9",
+    "@types/minimist": "^1.2.5",
+    "@types/node": "^24.10.1",
+    "ajv": "^8.12.0",
+    "ajv-formats": "^3.0.1",
+    "dotenv": "^16.3.1",
+    "fs-extra": "^11.2.0",
+    "glob": "^13.0.0",
+    "js-yaml": "^4.1.0",
+    "minimist": "^1.2.8",
+    "nodemailer": "^7.0.11",
+    "redis": "^4.7.0"
+  },
+  "lint-staged": {
+    "*.{ts,js}": [
+      "echo 'Running TypeScript check...'",
+      "tsc --noEmit"
+    ]
+  }
+}

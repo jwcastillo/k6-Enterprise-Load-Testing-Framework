@@ -1,0 +1,226 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://k6-enterprise-framework/schemas/config.json",
+  "title": "k6 Enterprise Framework Configuration",
+  "description": "Configuration schema for k6 Enterprise Framework test clients",
+  "type": "object",
+  "required": ["baseUrl"],
+  "properties": {
+    "baseUrl": {
+      "type": "string",
+      "format": "uri",
+      "description": "Base URL for the API under test",
+      "examples": [
+        "https://api.example.com",
+        "http://localhost:3000"
+      ]
+    },
+    "scenarios": {
+      "type": "object",
+      "description": "k6 test scenarios configuration",
+      "patternProperties": {
+        "^[a-zA-Z0-9_-]+$": {
+          "type": "object",
+          "required": ["executor"],
+          "properties": {
+            "executor": {
+              "type": "string",
+              "enum": [
+                "constant-vus",
+                "constant-arrival-rate",
+                "ramping-vus",
+                "ramping-arrival-rate",
+                "shared-iterations",
+                "per-vu-iterations",
+                "externally-controlled"
+              ],
+              "description": "k6 executor type"
+            },
+            "vus": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Number of virtual users"
+            },
+            "duration": {
+              "type": "string",
+              "pattern": "^[0-9]+(s|m|h)$",
+              "description": "Test duration (e.g., '30s', '5m', '1h')"
+            },
+            "iterations": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Total number of iterations"
+            },
+            "startRate": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Starting rate for arrival-rate executors"
+            },
+            "timeUnit": {
+              "type": "string",
+              "pattern": "^[0-9]+(s|m|h)$",
+              "description": "Time unit for rate (e.g., '1s')"
+            },
+            "preAllocatedVUs": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Pre-allocated VUs for arrival-rate executors"
+            },
+            "maxVUs": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Maximum VUs for arrival-rate executors"
+            },
+            "stages": {
+              "type": "array",
+              "description": "Ramping stages",
+              "items": {
+                "type": "object",
+                "required": ["target", "duration"],
+                "properties": {
+                  "target": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Target VUs or rate"
+                  },
+                  "duration": {
+                    "type": "string",
+                    "pattern": "^[0-9]+(s|m|h)$",
+                    "description": "Stage duration"
+                  }
+                }
+              }
+            },
+            "options": {
+              "type": "object",
+              "description": "Additional scenario options",
+              "properties": {
+                "browser": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": ["chromium", "firefox"],
+                      "description": "Browser type for browser tests"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "thresholds": {
+      "type": "object",
+      "description": "Performance thresholds",
+      "patternProperties": {
+        "^[a-zA-Z0-9_{}():]+$": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "Threshold expression (e.g., 'p(95)<500', 'rate<0.01')"
+          }
+        }
+      },
+      "examples": [
+        {
+          "http_req_duration": ["p(95)<500", "p(99)<1000"],
+          "http_req_failed": ["rate<0.01"],
+          "checks": ["rate>0.95"]
+        }
+      ]
+    },
+    "tags": {
+      "type": "object",
+      "description": "Custom tags for test runs",
+      "patternProperties": {
+        "^[a-zA-Z0-9_-]+$": {
+          "type": "string"
+        }
+      }
+    },
+    "env": {
+      "type": "object",
+      "description": "Environment variables",
+      "patternProperties": {
+        "^[a-zA-Z0-9_]+$": {
+          "type": "string"
+        }
+      }
+    },
+    "auth": {
+      "type": "object",
+      "description": "Authentication configuration",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["bearer", "basic", "oauth2", "apikey"],
+          "description": "Authentication type"
+        },
+        "token": {
+          "type": "string",
+          "description": "Authentication token"
+        },
+        "username": {
+          "type": "string",
+          "description": "Username for basic auth"
+        },
+        "password": {
+          "type": "string",
+          "description": "Password for basic auth"
+        },
+        "apiKey": {
+          "type": "string",
+          "description": "API key"
+        },
+        "apiKeyHeader": {
+          "type": "string",
+          "description": "Header name for API key",
+          "default": "X-API-Key"
+        }
+      }
+    },
+    "headers": {
+      "type": "object",
+      "description": "Default HTTP headers",
+      "patternProperties": {
+        "^[a-zA-Z0-9-]+$": {
+          "type": "string"
+        }
+      }
+    },
+    "timeout": {
+      "type": "string",
+      "pattern": "^[0-9]+(s|m|h)$",
+      "description": "Default request timeout",
+      "default": "30s"
+    },
+    "retries": {
+      "type": "object",
+      "description": "Retry configuration",
+      "properties": {
+        "maxRetries": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10,
+          "description": "Maximum number of retries",
+          "default": 3
+        },
+        "backoffMultiplier": {
+          "type": "number",
+          "minimum": 1,
+          "description": "Backoff multiplier for exponential backoff",
+          "default": 2
+        },
+        "initialDelay": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Initial delay in milliseconds",
+          "default": 100
+        }
+      }
+    }
+  },
+  "additionalProperties": true
+}

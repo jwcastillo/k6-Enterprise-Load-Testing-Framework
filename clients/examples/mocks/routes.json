@@ -1,0 +1,139 @@
+{
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/api/health",
+      "response": {
+        "status": 200,
+        "body": {
+          "status": "ok",
+          "version": "1.0.0"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/auth/users/",
+      "response": {
+        "status": 201,
+        "body": {
+          "id": "user_123",
+          "username": "testuser",
+          "email": "test@example.com"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/auth/token/login/",
+      "response": {
+        "status": 200,
+        "body": {
+          "auth_token": "mock_token_abc123xyz"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/auth/token/logout/",
+      "response": {
+        "status": 204,
+        "body": {}
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/login",
+      "response": {
+        "status": 200,
+        "body": {
+          "message": "Login page"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/dashboard",
+      "response": {
+        "status": 200,
+        "body": {
+          "message": "Dashboard page"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/products",
+      "response": {
+        "status": 200,
+        "body": {
+          "data": [
+            { "id": "prod_1", "name": "Laptop", "price": 999 },
+            { "id": "prod_2", "name": "Mouse", "price": 29 }
+          ],
+          "total": 2
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/products/:id",
+      "response": {
+        "status": 200,
+        "body": {
+          "id": "prod_1",
+          "name": "Laptop",
+          "description": "High performance laptop",
+          "price": 999
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/cart",
+      "response": {
+        "status": 201,
+        "body": {
+          "id": "cart_item_123",
+          "productId": "prod_1",
+          "quantity": 1
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/checkout",
+      "response": {
+        "status": 200,
+        "body": {
+          "orderId": "order_abc123",
+          "status": "confirmed"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/upload",
+      "response": {
+        "status": 200,
+        "body": {
+          "files": {
+            "file": "test-file.txt"
+          },
+          "message": "Upload successful"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/",
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "text/html"
+        },
+        "body": "<!DOCTYPE html><html><head><title>k6 Browser Demo</title></head><body><h2>Welcome to the k6 browser demo</h2><div class='welcome-message'>Hello User</div></body></html>"
+      }
+    }
+  ]
+}

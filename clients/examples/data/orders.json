@@ -1,0 +1,33 @@
+[
+  {
+    "id": "order_001",
+    "userId": "user_123",
+    "items": [
+      { "productId": "prod_1", "name": "Laptop", "price": 999, "quantity": 1 }
+    ],
+    "total": 999,
+    "status": "confirmed",
+    "createdAt": "2025-12-01T10:00:00Z"
+  },
+  {
+    "id": "order_002",
+    "userId": "user_456",
+    "items": [
+      { "productId": "prod_2", "name": "Mouse", "price": 29, "quantity": 2 },
+      { "productId": "prod_3", "name": "Keyboard", "price": 79, "quantity": 1 }
+    ],
+    "total": 137,
+    "status": "shipped",
+    "createdAt": "2025-12-01T14:30:00Z"
+  },
+  {
+    "id": "order_003",
+    "userId": "user_789",
+    "items": [
+      { "productId": "prod_4", "name": "Monitor", "price": 299, "quantity": 1 }
+    ],
+    "total": 299,
+    "status": "pending",
+    "createdAt": "2025-12-02T09:15:00Z"
+  }
+]

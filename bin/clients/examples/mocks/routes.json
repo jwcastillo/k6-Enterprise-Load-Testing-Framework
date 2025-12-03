@@ -1,0 +1,26 @@
+{
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/api/health",
+      "response": {
+        "status": 200,
+        "body": {
+          "status": "ok",
+          "version": "1.0.0"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/users",
+      "response": {
+        "status": 201,
+        "body": {
+          "id": "user_123",
+          "created": true
+        }
+      }
+    }
+  ]
+}

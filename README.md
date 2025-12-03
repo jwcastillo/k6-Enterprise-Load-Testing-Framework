@@ -149,6 +149,42 @@ K6_PYROSCOPE_ENABLED=true
 K6_CHAOS_ENABLED=true
 ```
 
+### Scenario Configuration (YAML)
+
+You can also define scenarios using YAML format in your test files:
+
+```yaml
+scenarios:
+  load_test:
+    executor: ramping-vus
+    startVUs: 0
+    stages:
+      - duration: 30s
+        target: 10
+      - duration: 1m
+        target: 50
+      - duration: 30s
+        target: 0
+    gracefulRampDown: 10s
+
+  spike_test:
+    executor: constant-arrival-rate
+    rate: 100
+    timeUnit: 1s
+    duration: 2m
+    preAllocatedVUs: 50
+    maxVUs: 100
+
+thresholds:
+  http_req_duration:
+    - p(95) < 500
+    - p(99) < 1000
+  http_req_failed:
+    - rate < 0.01
+  checks:
+    - rate > 0.95
+```
+
 ## 📖 Learn More
 
 Visit the [docs](docs/) folder for comprehensive guides on:

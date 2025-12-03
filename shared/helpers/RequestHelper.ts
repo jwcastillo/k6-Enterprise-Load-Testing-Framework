@@ -4,6 +4,7 @@ import { HttpInstrumentation as TempoInstrumentation } from 'https://jslib.k6.io
 // @ts-ignore
 import { HttpInstrumentation as PyroscopeInstrumentation } from 'https://jslib.k6.io/http-instrumentation-pyroscope/1.0.0/index.js';
 import { ChaosHelper } from './ChaosHelper.js';
+import { HeaderHelper } from './HeaderHelper.js';
 
 /**
  * RequestHelper - Utility for building and executing HTTP requests
@@ -218,6 +219,14 @@ export class RequestHelper {
    */
   public removeHeader(key: string): void {
     delete this.defaultHeaders[key];
+  }
+
+  /**
+   * Apply standard corporate headers
+   */
+  public applyStandardHeaders(home: string = 'CL', token: string | null = null): void {
+    const standardHeaders = HeaderHelper.getStandardHeaders(home, undefined, undefined, token);
+    this.defaultHeaders = HeaderHelper.mergeHeaders(this.defaultHeaders, standardHeaders);
   }
 
   // ============================================

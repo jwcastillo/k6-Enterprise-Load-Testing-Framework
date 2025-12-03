@@ -252,13 +252,16 @@ export class Runner {
         reportDir,
         `enterprise-report-${timestamp}.html`
       );
+      const configPath = path.join(clientDir, "config", "default.json");
       const reportCommand = `node bin/reporting/report.js --input="${jsonOutputPath}" --output="${enterpriseReportPath}" --client="${
         this.options.client
       }" --test="${testName}" --k6-dashboard="${path.basename(
         webDashboardPath
       )}" --k6-log="${path.basename(
         logFilePath
-      )}" --k6-summary="${path.basename(summaryFilePath)}"`;
+      )}" --k6-summary="${path.basename(
+        summaryFilePath
+      )}" --config="${configPath}"`;
       await new Promise<void>((resolve, reject) => {
         exec(
           reportCommand,
@@ -274,6 +277,34 @@ export class Runner {
           }
         );
       });
+
+      // 8. Send Slack notification (if webhook is configured)
+      if (process.env.SLACK_WEBHOOK_URL) {
+        console.log("\n📤 Sending Slack notification...");
+        try {
+          const slackCommand = `node bin/reporting/slack-notify.js --client="${this.options.client}" --test="${testName}" --report-dir="${reportDir}"`;
+          await new Promise<void>((resolve, reject) => {
+            exec(
+              slackCommand,
+              { cwd: this.rootDir },
+              (error: Error | null, stdout: string, stderr: string) => {
+                if (error) {
+                  console.warn(
+                    "⚠️  Failed to send Slack notification:",
+                    error.message
+                  );
+                  resolve(); // Don't fail the test if Slack notification fails
+                } else {
+                  console.log(stdout);
+                  resolve();
+                }
+              }
+            );
+          });
+        } catch (error: any) {
+          console.warn("⚠️  Slack notification error:", error.message);
+        }
+      }
     } catch (error: any) {
       console.error("\n❌ Execution Failed:");
       console.error(`   ${error.message}`);

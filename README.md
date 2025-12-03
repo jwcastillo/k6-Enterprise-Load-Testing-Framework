@@ -87,13 +87,17 @@ npm run security:fix
 
 ## 📊 Reports
 
-The framework generates three types of reports for each test run:
+The framework generates multiple reports and artifacts for each test run:
 
 ```
 reports/{client}/{test}/
-├── k6-output-{timestamp}.json          # Raw k6 metrics
-├── k6-dashboard-{timestamp}.html       # k6 web dashboard (interactive)
-└── custom-report-{timestamp}.html      # Custom enterprise report
+├── k6-output-{timestamp}.json          # Raw k6 metrics (NDJSON format)
+├── k6-summary-{timestamp}.json         # Summary metrics for comparison
+├── k6-dashboard-{timestamp}.html       # k6 web dashboard (interactive charts)
+├── enterprise-report-{timestamp}.html  # Custom enterprise HTML report
+├── k6-execution-{timestamp}.log        # Full execution log
+├── k6-summary-{timestamp}.txt          # Text summary of results
+└── comparison-{timestamp}.md           # Performance comparison (if previous runs exist)
 ```
 
 ## 🔧 Configuration

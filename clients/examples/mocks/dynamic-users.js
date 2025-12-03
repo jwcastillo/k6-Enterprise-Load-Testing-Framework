@@ -1,15 +1,15 @@
 /**
- * Dynamic Mock Example
+ * Dynamic User Mock Handler
  * 
  * This module exports a function that receives the Express app instance.
- * You can define complex logic, dynamic responses, and stateful mocks here.
+ * Provides dynamic user management with CRUD operations.
  */
 
-module.exports = function(app) {
+export default function(app) {
   // In-memory store for dynamic mock
   const users = [];
 
-  // Dynamic POST endpoint
+  // Create user
   app.post('/api/dynamic/users', (req, res) => {
     const user = req.body;
     
@@ -28,13 +28,69 @@ module.exports = function(app) {
     res.status(201).json(newUser);
   });
 
-  // Dynamic GET endpoint with query params
+  // Get all users with pagination
   app.get('/api/dynamic/users', (req, res) => {
-    const { limit = 10 } = req.query;
+    const { limit = 10, offset = 0, search = '' } = req.query;
+    
+    let filteredUsers = users;
+    
+    // Search filter
+    if (search) {
+      filteredUsers = users.filter(u => 
+        u.username.toLowerCase().includes(search.toLowerCase()) ||
+        u.email.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+    
+    const start = parseInt(offset);
+    const end = start + parseInt(limit);
+    
     res.json({
-      data: users.slice(0, parseInt(limit)),
-      total: users.length
+      data: filteredUsers.slice(start, end),
+      total: filteredUsers.length,
+      limit: parseInt(limit),
+      offset: parseInt(offset)
     });
+  });
+
+  // Get user by ID
+  app.get('/api/dynamic/users/:id', (req, res) => {
+    const user = users.find(u => u.id === req.params.id);
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json(user);
+  });
+
+  // Update user
+  app.put('/api/dynamic/users/:id', (req, res) => {
+    const index = users.findIndex(u => u.id === req.params.id);
+    
+    if (index === -1) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    users[index] = {
+      ...users[index],
+      ...req.body,
+      updatedAt: new Date().toISOString()
+    };
+    
+    res.json(users[index]);
+  });
+
+  // Delete user
+  app.delete('/api/dynamic/users/:id', (req, res) => {
+    const index = users.findIndex(u => u.id === req.params.id);
+    
+    if (index === -1) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    users.splice(index, 1);
+    res.status(204).send();
   });
 
   // Random error simulation
@@ -44,4 +100,4 @@ module.exports = function(app) {
     }
     res.json({ status: 'success' });
   });
-};
+}

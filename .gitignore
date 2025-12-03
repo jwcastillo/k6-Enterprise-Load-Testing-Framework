@@ -6,5 +6,9 @@ dist/
 screenshots/
 reports/
 
+clients/*/
+!clients/.gitkeep
+!clients/examples/  # Mantener cliente de ejemplo
+
 performance.xml
 repomix-output.xml

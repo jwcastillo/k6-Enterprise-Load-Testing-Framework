@@ -5,7 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.1] - 2025-12-03
+
+### Changed
+- **CI/CD Workflows**: Updated GitHub Actions to latest versions
+  - `actions/checkout` from v3 to v6
+  - `actions/setup-node` from v3 to v6
+  - `actions/upload-artifact` from v3 to v5
+  - `docker/login-action` from v2 to v3
+  - `docker/metadata-action` from v4 to v5
+  - `docker/build-push-action` from v4 to v6
+
+### Fixed
+- **Git History**: Removed all reports files from Git history to reduce repository size
+- **Version Tags**: Created missing tags (v1.3.0 through v1.10.0) to align with CHANGELOG
+
 ## [1.10.0] - 2025-12-03
+
 
 ### Added
 - **HeaderHelper**: Standardized HTTP header management system

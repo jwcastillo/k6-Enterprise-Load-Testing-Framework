@@ -63,7 +63,8 @@
     "inquirer": "^13.0.2",
     "k6": "^0.0.0",
     "lint-staged": "^16.2.7",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "tmp": ">=0.2.4"
   },
   "dependencies": {
     "@types/fs-extra": "^11.0.4",

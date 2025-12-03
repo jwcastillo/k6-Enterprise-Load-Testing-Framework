@@ -1,7 +1,7 @@
 /**
  * DataHelper - Utility functions for data manipulation and generation
  */
-
+import crypto from 'crypto';
 export class DataHelper {
   /**
    * Generate random string
@@ -11,7 +11,8 @@ export class DataHelper {
       "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     let result = "";
     for (let i = 0; i < length; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
+      const idx = crypto.randomInt(0, chars.length);
+      result += chars.charAt(idx);
     }
     return result;
   }
@@ -20,7 +21,8 @@ export class DataHelper {
    * Generate random number between min and max
    */
   public static randomInt(min: number, max: number): number {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
+    // Use crypto.randomInt, which gives [min, max] inclusive
+    return crypto.randomInt(min, max + 1);
   }
 
   /**
@@ -48,7 +50,8 @@ export class DataHelper {
       "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
     let result = "";
     for (let i = 0; i < length; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
+      const idx = crypto.randomInt(0, chars.length);
+      result += chars.charAt(idx);
     }
     return result;
   }
@@ -57,7 +60,12 @@ export class DataHelper {
    * Pick random item from array
    */
   public static randomItem<T>(array: T[]): T {
-    return array[Math.floor(Math.random() * array.length)];
+    // Use crypto.randomInt to securely pick index
+    if (array.length === 0) {
+      throw new Error('Cannot pick random item from empty array');
+    }
+    const idx = crypto.randomInt(0, array.length);
+    return array[idx];
   }
 
   /**
@@ -66,7 +74,7 @@ export class DataHelper {
   public static shuffle<T>(array: T[]): T[] {
     const shuffled = [...array];
     for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
+      const j = crypto.randomInt(0, i + 1);
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
     return shuffled;

@@ -91,19 +91,9 @@ jobs:
           TEST: "example.ts"
           ENV: "default"
         run: |
-          echo "🚀 Running k6 smoke test..."
-          node dist/core/cli.js --client="$CLIENT" --test="$TEST" --env="$ENV" || TEST_FAILED=true
-
-          # Display beautiful summary
-          chmod +x bin/reporting/test-summary.sh
-          TEST_NAME=$(echo "$TEST" | sed 's/\.ts$//')
-          ./bin/reporting/test-summary.sh reports "$CLIENT" "$TEST_NAME" || true
-
-          if [ "$TEST_FAILED" = "true" ]; then
-            echo "❌ Test failed!"
-            exit 1
-          fi
-          echo "✅ Test passed!"
+          echo "🚀 Running k6 smoke test with run-test.sh wrapper..."
+          chmod +x bin/testing/run-test.sh
+          ./bin/testing/run-test.sh --client="$CLIENT" --test="$TEST" --env="$ENV"
 
       - name: Upload Test Reports
         if: always()

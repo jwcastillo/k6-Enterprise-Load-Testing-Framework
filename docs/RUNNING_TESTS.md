@@ -1,407 +1,233 @@
-# Running Tests On-Demand via CI/CD Pipelines
+# Running Tests Guide
 
-This guide explains how to execute k6 load tests on-demand using GitHub Actions and GitLab CI pipelines.
+This guide explains the different ways to run tests in the k6 Enterprise Load Testing Framework.
 
-## Overview
+## 🎯 Recommended Method: run-test.sh Wrapper
 
-The framework provides two separate pipelines:
-1. **Validation Pipeline** (`ci.yml`) - Runs automatically on push/PR to validate code quality
-2. **Test Execution Pipeline** (`run-tests.yml`) - Runs manually on-demand to execute specific k6 tests
+The **preferred way** to run tests is using the `run-test.sh` wrapper script. This script provides:
 
-## GitHub Actions - On-Demand Test Execution
+- ✅ Automatic configuration validation
+- ✅ Automatic project build
+- ✅ Beautiful test summaries with emojis
+- ✅ Performance comparison with previous runs
+- ✅ Proper error handling and exit codes
+- ✅ Support for load profiles (smoke, load, stress, spike)
 
-### Method 1: Manual Execution from GitHub UI
-
-1. Navigate to your repository on GitHub
-2. Click on the **Actions** tab
-3. In the left sidebar, select **"Run k6 Tests"** workflow
-4. Click the **"Run workflow"** button (top right)
-5. Fill in the parameters:
-   - **client**: The client to test (e.g., `local`, `client-a`)
-   - **env**: Environment (e.g., `default`, `staging`, `prod`)
-   - **test**: Test file name (e.g., `example.ts`, `auth-flow.ts`)
-   - **profile**: Load profile (e.g., `smoke`, `load`, `stress`, `spike`)
-6. Click **"Run workflow"** to start execution
-
-### Method 2: Execution via GitHub API
+### Basic Usage
 
 ```bash
-# Generate a Personal Access Token:
-# GitHub → Settings → Developer settings → Personal access tokens → Generate new token
-# Required scopes: repo, workflow
-
-# Execute workflow
-curl -X POST \
-  -H "Accept: application/vnd.github+json" \
-  -H "Authorization: Bearer YOUR_GITHUB_TOKEN" \
-  -H "X-GitHub-Api-Version: 2022-11-28" \
-  https://api.github.com/repos/OWNER/REPO/actions/workflows/run-tests.yml/dispatches \
-  -d '{
-    "ref": "main",
-    "inputs": {
-      "client": "local",
-      "env": "staging",
-      "test": "load-test.ts",
-      "profile": "load"
-    }
-  }'
+./bin/testing/run-test.sh --client=latam --test=example.ts
 ```
 
-### Method 3: Trigger from Another Workflow
-
-```yaml
-name: Trigger Load Tests
-
-on:
-  push:
-    branches: [main]
-  workflow_dispatch:
-
-jobs:
-  trigger-tests:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger k6 Tests
-        uses: actions/github-script@v6
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            await github.rest.actions.createWorkflowDispatch({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'run-tests.yml',
-              ref: 'main',
-              inputs: {
-                client: 'production',
-                env: 'prod',
-                test: 'smoke-suite.ts',
-                profile: 'smoke'
-              }
-            })
-```
-
-### Method 4: Scheduled Execution
-
-Create a new workflow file `.github/workflows/scheduled-tests.yml`:
-
-```yaml
-name: Scheduled Load Tests
-
-on:
-  schedule:
-    # Run daily at 6 AM UTC
-    - cron: '0 6 * * *'
-  workflow_dispatch:
-
-jobs:
-  daily-smoke:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Use Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18.x'
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Build
-        run: npm run build
-      
-      - name: Setup k6
-        uses: grafana/setup-k6-action@v1
-      
-      - name: Run Daily Smoke Tests
-        run: |
-          node dist/core/cli.js \
-            --client=production \
-            --env=prod \
-            --test=smoke-suite.ts \
-            --profile=smoke
-      
-      - name: Upload Reports
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: daily-smoke-reports
-          path: reports/**/*
-          retention-days: 30
-```
-
-## GitLab CI - On-Demand Test Execution
-
-### Method 1: Manual Execution from GitLab UI
-
-1. Navigate to your project on GitLab
-2. Go to **CI/CD → Pipelines**
-3. Click **"Run pipeline"** button (top right)
-4. Select the branch (e.g., `main`)
-5. Click on the **"run:test"** job
-6. Click the **"Play"** button (▶️) to execute
-7. (Optional) Add custom variables before running:
-   - `CLIENT`: Client name (default: `local`)
-   - `TEST`: Test file (default: `example.ts`)
-   - `ENV`: Environment (default: `default`)
-
-### Method 2: Execution via GitLab API
+### With Environment
 
 ```bash
-# Generate a Personal Access Token:
-# GitLab → Settings → Access Tokens → Add new token
-# Required scopes: api, read_api, write_repository
-
-# Trigger pipeline with specific job
-curl -X POST \
-  -H "PRIVATE-TOKEN: YOUR_GITLAB_TOKEN" \
-  "https://gitlab.com/api/v4/projects/PROJECT_ID/pipeline" \
-  -d "ref=main" \
-  -d "variables[CLIENT]=production" \
-  -d "variables[TEST]=load-test.ts" \
-  -d "variables[ENV]=prod"
+./bin/testing/run-test.sh --client=latam --test=example.ts --env=staging
 ```
 
-### Method 3: Trigger from Another Pipeline
+### With Load Profile
 
-```yaml
-# In your .gitlab-ci.yml or another project
-trigger_load_tests:
-  stage: test
-  script:
-    - |
-      curl -X POST \
-        -H "PRIVATE-TOKEN: $CI_JOB_TOKEN" \
-        "$CI_API_V4_URL/projects/FRAMEWORK_PROJECT_ID/pipeline" \
-        -d "ref=main" \
-        -d "variables[CLIENT]=production" \
-        -d "variables[TEST]=critical-flow.ts" \
-        -d "variables[ENV]=staging"
-  only:
-    - main
+```bash
+./bin/testing/run-test.sh --client=latam --test=example.ts --profile=smoke
 ```
 
-### Method 4: Scheduled Execution
+Available profiles:
+- `smoke` - Quick validation (low load)
+- `load` - Normal load testing
+- `stress` - High load testing
+- `spike` - Sudden traffic spikes
 
-Add to your `.gitlab-ci.yml`:
+### Help
 
-```yaml
-scheduled:smoke:
-  extends: .test_template
-  needs: [build]
-  variables:
-    CLIENT: "production"
-    TEST: "smoke-suite.ts"
-    ENV: "prod"
-  only:
-    - schedules
+```bash
+./bin/testing/run-test.sh --help
 ```
 
-Then create a schedule in GitLab:
-1. Go to **CI/CD → Schedules**
-2. Click **"New schedule"**
-3. Set description: "Daily Smoke Tests"
-4. Set interval pattern: `0 6 * * *` (6 AM daily)
-5. Set target branch: `main`
-6. Save schedule
+## 🔧 Alternative: Direct CLI Usage
 
-## Available Parameters
+For advanced use cases or when you need more control, you can use the CLI directly:
 
-| Parameter | Description | Example Values | Default | Required |
-|-----------|-------------|----------------|---------|----------|
-| `client` | Client to test | `local`, `client-a`, `production` | `local` | ✅ Yes |
-| `env` | Environment | `default`, `staging`, `prod` | `default` | ✅ Yes |
-| `test` | Test file | `example.ts`, `auth-flow.ts` | `example.ts` | ✅ Yes |
-| `profile` | Load profile | `smoke`, `load`, `stress`, `spike` | `smoke` | ❌ No |
+```bash
+node dist/core/cli.js --client=latam --test=example.ts --env=default
+```
 
-## Test Profiles
+### When to use direct CLI:
 
-### Smoke Profile
-- **Purpose**: Quick validation
-- **VUs**: 1-5
-- **Duration**: 30s - 1m
-- **Use case**: Pre-deployment checks, daily health checks
+- Custom k6 options not supported by the wrapper
+- Integration with other tools
+- Debugging specific issues
+- CI/CD pipelines with custom requirements
 
-### Load Profile
-- **Purpose**: Sustained load testing
-- **VUs**: 10-50
-- **Duration**: 5m - 30m
-- **Use case**: Performance baseline, capacity planning
+## 📊 Understanding Test Output
 
-### Stress Profile
-- **Purpose**: Find breaking point
-- **VUs**: Ramps up to 100+
-- **Duration**: 10m - 1h
-- **Use case**: Identify system limits, stress testing
+### run-test.sh Output
 
-### Spike Profile
-- **Purpose**: Sudden traffic spike
-- **VUs**: Rapid ramp from 0 to high
-- **Duration**: 5m - 15m
-- **Use case**: Black Friday scenarios, viral events
+The wrapper script provides a beautiful, colorized summary:
 
-## Viewing Results
+```
+╔════════════════════════════════════════════════════════════════╗
+║           🚀 k6 ENTERPRISE TEST RESULTS 🚀                     ║
+╚════════════════════════════════════════════════════════════════╝
 
-### GitHub Actions
-1. Go to **Actions** tab
-2. Click on the workflow run
-3. Download artifacts from the **Artifacts** section
-4. Reports include:
-   - JSON output (`k6-output-*.json`)
-   - Enterprise HTML report (`enterprise-report-*.html`)
-   - k6 Dashboard (`k6-dashboard-*.html`)
-   - Execution log (`k6-log-*.log`)
-   - Summary (`k6-summary-*.txt`)
-   - Screenshots (if browser tests)
+📊 Test Information:
+   Client:    latam
+   Test:      example
+   Duration:  30.5s
+
+✅ Status: PASSED
+💬 🎉 ¡Épico! Todo pasó como mantequilla
+
+📈 Metrics Summary:
+   ✓ Checks Passed:    150 / 150 (100.0%)
+   🔄 HTTP Requests:   1500
+   🔁 Iterations:      150
+
+📁 Generated Files:
+   ✓ JSON Output:       k6-output-20231203-143022.json
+   ✓ k6 Dashboard:      k6-dashboard-20231203-143022.html
+   ✓ Enterprise Report: enterprise-report-20231203-143022.html
+   ✓ Summary:           k6-summary-20231203-143022.txt
+
+📂 Report Directory: reports/latam/example/20231203-143022
+
+╔════════════════════════════════════════════════════════════════╗
+║  ✅  ALL TESTS PASSED - READY TO DEPLOY! ✅                    ║
+╚════════════════════════════════════════════════════════════════╝
+```
+
+### Features of the Summary
+
+- **Random Fun Messages**: Different messages for passed/failed tests
+- **Color-Coded Status**: Green for success, red for failures
+- **Detailed Metrics**: Checks, HTTP requests, iterations
+- **File Listing**: All generated reports and artifacts
+- **Performance Comparison**: Automatic comparison with previous runs (if available)
+
+## 🚀 CI/CD Integration
 
 ### GitLab CI
-1. Go to **CI/CD → Pipelines**
-2. Click on the pipeline run
-3. Click on the **"run:test"** job
-4. View logs in the job output
-5. Download artifacts from the right sidebar
-6. Reports are organized in `reports/{client}/{test}/` structure
 
-## Best Practices
+The framework's `.gitlab-ci.yml` uses `run-test.sh` for all test executions:
 
-### 1. Use Descriptive Test Names
-```bash
-# Good
---test=user-registration-flow.ts
---test=api-load-baseline.ts
-
-# Avoid
---test=test1.ts
---test=mytest.ts
+```yaml
+test:smoke:
+  stage: test
+  script:
+    - chmod +x bin/testing/run-test.sh
+    - ./bin/testing/run-test.sh --client="latam" --test="example.ts" --env="default"
 ```
 
-### 2. Choose Appropriate Profiles
-- **Smoke**: For quick validation (< 1 minute)
-- **Load**: For realistic traffic simulation (5-30 minutes)
-- **Stress**: For finding limits (10-60 minutes)
-- **Spike**: For sudden traffic scenarios (5-15 minutes)
+### GitHub Actions
 
-### 3. Set Up Notifications
-Configure Slack/Discord/Email notifications for:
-- Test failures
-- Threshold violations
-- Long-running tests
+The `.github/workflows/ci.yml` also uses the wrapper:
 
-### 4. Archive Important Results
-- Keep smoke test results for 7 days
-- Keep load test results for 30 days
-- Keep stress test results for 90 days
+```yaml
+- name: Run Smoke Test
+  run: |
+    chmod +x bin/testing/run-test.sh
+    ./bin/testing/run-test.sh --client="latam" --test="example.ts" --env="default"
+```
 
-### 5. Use Environment Variables for Secrets
-Never hardcode:
-- API tokens
-- Passwords
-- API keys
-
-Use GitHub Secrets or GitLab CI/CD Variables instead.
-
-## Troubleshooting
-
-### Test Not Starting
-- **GitHub**: Check workflow file syntax
-- **GitLab**: Verify job is not blocked by dependencies
-- **Both**: Ensure branch exists and has latest code
-
-### Test Failing
-1. Check test logs in job output
-2. Verify environment variables are set
-3. Check if test file exists in `clients/{client}/scenarios/`
-4. Validate k6 is installed correctly
-
-### No Artifacts Generated
-- **GitHub**: Check `upload-artifact` step completed
-- **GitLab**: Verify `artifacts.paths` configuration
-- **Both**: Ensure reports directory was created
-
-### Permission Errors
-- **GitHub**: Verify token has `workflow` scope
-- **GitLab**: Check token has `api` and `write_repository` scopes
-- **Both**: Ensure user has appropriate project permissions
-
-## Examples
+## 📝 Examples
 
 ### Quick Smoke Test
-```bash
-# GitHub
-curl -X POST \
-  -H "Authorization: Bearer $GITHUB_TOKEN" \
-  https://api.github.com/repos/OWNER/REPO/actions/workflows/run-tests.yml/dispatches \
-  -d '{"ref": "main", "inputs": {"client": "local", "test": "example.ts", "profile": "smoke"}}'
 
-# GitLab
-curl -X POST \
-  -H "PRIVATE-TOKEN: $GITLAB_TOKEN" \
-  "https://gitlab.com/api/v4/projects/PROJECT_ID/pipeline" \
-  -d "ref=main" \
-  -d "variables[CLIENT]=local" \
-  -d "variables[TEST]=example.ts"
+```bash
+./bin/testing/run-test.sh --client=latam --test=example.ts --profile=smoke
 ```
 
-### Full Load Test
+### Load Test with Staging Environment
+
 ```bash
-# GitHub
-curl -X POST \
-  -H "Authorization: Bearer $GITHUB_TOKEN" \
-  https://api.github.com/repos/OWNER/REPO/actions/workflows/run-tests.yml/dispatches \
-  -d '{"ref": "main", "inputs": {"client": "production", "env": "staging", "test": "full-load.ts", "profile": "load"}}'
+./bin/testing/run-test.sh --client=latam --test=checkout-flow.ts --env=staging --profile=load
 ```
 
 ### Stress Test
-```bash
-# GitLab
-curl -X POST \
-  -H "PRIVATE-TOKEN: $GITLAB_TOKEN" \
-  "https://gitlab.com/api/v4/projects/PROJECT_ID/pipeline" \
-  -d "ref=main" \
-  -d "variables[CLIENT]=production" \
-  -d "variables[ENV]=staging" \
-  -d "variables[TEST]=stress-test.ts" \
-  -d "variables[PROFILE]=stress"
-```
-
-## Integration with Other Tools
-
-### Slack Notifications
-Add to your workflow:
-
-```yaml
-- name: Notify Slack
-  if: always()
-  uses: slackapi/slack-github-action@v1
-  with:
-    payload: |
-      {
-        "text": "k6 Test Results: ${{ job.status }}",
-        "blocks": [
-          {
-            "type": "section",
-            "text": {
-              "type": "mrkdwn",
-              "text": "*Test*: ${{ github.event.inputs.test }}\n*Status*: ${{ job.status }}"
-            }
-          }
-        ]
-      }
-  env:
-    SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
-```
-
-### Datadog Integration
-k6 can send metrics directly to Datadog:
 
 ```bash
-K6_DATADOG_ENABLED=true \
-K6_DATADOG_API_KEY=$DATADOG_API_KEY \
-node dist/core/cli.js --client=production --test=load-test.ts
+./bin/testing/run-test.sh --client=latam --test=api-endpoints.ts --profile=stress
 ```
 
-## Next Steps
+### Browser Test (requires K6_BROWSER_ENABLED)
 
-- [Test Types Guide](TEST_TYPES.md) - Learn about different test types
-- [Extensions Guide](EXTENSIONS.md) - Enable tracing and profiling
-- [Contributing Guide](../CONTRIBUTING.md) - How to add new tests
+```bash
+K6_BROWSER_ENABLED=true ./bin/testing/run-test.sh --client=latam --test=browser-test.ts
+```
+
+## 🐳 Running Tests with Docker
+
+The framework includes Docker support with the same `run-test.sh` wrapper as the entrypoint.
+
+### Using Docker Compose (Recommended)
+
+Docker Compose automatically sets up Redis and the k6 runner:
+
+```bash
+# Basic usage
+docker-compose run k6-runner --client=latam --test=example.ts
+
+# With custom environment
+CLIENT=latam TEST=example.ts ENV=staging docker-compose run k6-runner
+
+# With load profile
+docker-compose run k6-runner --client=latam --test=example.ts --profile=smoke
+
+# Clean up after tests
+docker-compose down
+```
+
+### Using Docker Directly
+
+```bash
+# Build the image
+docker build -t k6-runner .
+
+# Run a test (reports will be saved in the container)
+docker run k6-runner --client=latam --test=example.ts
+
+# Run with volume mount to save reports locally
+docker run -v $(pwd)/reports:/app/reports k6-runner --client=latam --test=example.ts
+
+# Run with environment variables
+docker run -e K6_DEBUG=true k6-runner --client=latam --test=example.ts
+```
+
+### Docker with Redis
+
+When using Docker Compose, Redis is automatically available:
+
+```bash
+# The REDIS_URL is automatically set to redis://redis:6379
+docker-compose run k6-runner --client=latam --test=redis-test.ts
+```
+
+### Benefits of Docker
+
+- ✅ Consistent environment across all machines
+- ✅ No need to install Node.js or k6 locally
+- ✅ Automatic Redis setup with docker-compose
+- ✅ Easy CI/CD integration
+- ✅ Isolated test execution
+
+## 🔍 Troubleshooting
+
+### Script Not Executable
+
+```bash
+chmod +x bin/testing/run-test.sh
+```
+
+### Configuration Validation Failed
+
+The wrapper automatically validates your configuration. Fix the errors shown before running the test.
+
+### Build Errors
+
+The wrapper runs `npm run build` automatically. Ensure your TypeScript code compiles without errors.
+
+## 📚 Related Documentation
+
+- [Test Types](TEST_TYPES.md) - Different types of tests supported
+- [Configuration](../README.md#-configuration) - How to configure tests
+- [CI/CD Integration](CI_CD_INTEGRATION.md) - Running tests in pipelines
+- [Examples](EXAMPLES.md) - Complete example scenarios

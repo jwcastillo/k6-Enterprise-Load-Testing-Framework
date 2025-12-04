@@ -15,8 +15,11 @@ npm install
 # Build the project
 npm run build
 
-# Run a test
-node dist/core/cli.js --client=examples --test=example.ts
+# Run a test (recommended method)
+./bin/testing/run-test.sh --client=latam --test=example.ts
+
+# Alternative: Direct CLI usage (for advanced use cases)
+node dist/core/cli.js --client=latam --test=example.ts
 ```
 
 ## 📚 Documentation
@@ -69,6 +72,22 @@ npm run security:audit
 # Fix vulnerabilities
 npm run security:fix
 ```
+
+### Docker
+Run tests in Docker containers with Redis support:
+
+```bash
+# Using docker-compose (recommended)
+docker-compose run k6-runner --client=latam --test=example.ts
+
+# With custom environment
+CLIENT=latam TEST=example.ts ENV=staging docker-compose run k6-runner
+
+# Build and run manually
+docker build -t k6-runner .
+docker run -v $(pwd)/reports:/app/reports k6-runner --client=latam --test=example.ts
+```
+
 
 ## ✨ Key Features
 

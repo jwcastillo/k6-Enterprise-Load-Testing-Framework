@@ -2,7 +2,7 @@ FROM grafana/k6:latest
 
 # Install Node.js for the runner
 USER root
-RUN apk add --no-cache nodejs npm
+RUN apk add --no-cache nodejs npm bash
 
 # Set working directory
 WORKDIR /app
@@ -19,5 +19,10 @@ COPY . .
 # Build TypeScript
 RUN npm run build
 
-# Set entrypoint
-ENTRYPOINT ["node", "dist/core/cli.js"]
+# Make scripts executable
+RUN chmod +x bin/testing/run-test.sh
+
+# Set entrypoint to use the wrapper script
+# Usage: docker run k6-runner --client=latam --test=example.ts
+ENTRYPOINT ["./bin/testing/run-test.sh"]
+

@@ -1,6 +1,6 @@
 # k6 Enterprise Load Testing Framework
 
-[![Version](https://img.shields.io/badge/version-1.10.0-blue.svg)](https://github.com/yourusername/k6-enterprise-framework)
+[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/yourusername/k6-enterprise-framework)
 [![License](https://img.shields.io/badge/license-ISC-green.svg)](LICENSE)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/yourusername/k6-enterprise-framework/actions)
 

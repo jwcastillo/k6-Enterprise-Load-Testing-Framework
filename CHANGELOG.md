@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2025-12-03
+
+### Changed
+- **BREAKING**: Standardized on `run-test.sh` wrapper script across all platforms
+  - Updated README Quick Start to recommend `run-test.sh` as primary method
+  - Refactored GitLab CI to use `run-test.sh` for all test executions
+  - Updated GitHub Actions workflow to use `run-test.sh` wrapper
+  - Modified Dockerfile entrypoint from direct CLI to `run-test.sh`
+  - Updated docker-compose.yml to use new entrypoint
+  - Changed default client from `examples` to `latam` across all configurations
+
+### Added
+- **Documentation**: Created comprehensive `docs/RUNNING_TESTS.md` guide
+  - Detailed usage of `run-test.sh` wrapper (recommended method)
+  - When to use direct CLI (advanced use cases)
+  - Load profile examples (smoke, load, stress, spike)
+  - Complete Docker section with docker-compose examples
+  - Troubleshooting guide
+- **Docker Support**: Enhanced Docker documentation in README
+  - docker-compose usage examples
+  - Volume mounting for reports
+  - Environment variable configuration
+- **CI/CD**: Added smoke test job to both GitLab CI and GitHub Actions
+  - Automatic execution on branches and merge requests
+  - Uses `latam` client with `example.ts` test
+  - Generates and uploads test reports as artifacts
+
+### Fixed
+- **GitLab CI**: Fixed missing `build` and `security` stages definition
+- **GitLab CI**: Corrected path to test summary script (`bin/reporting/test-summary.sh`)
+
 ## [1.10.1] - 2025-12-03
 
 ### Changed

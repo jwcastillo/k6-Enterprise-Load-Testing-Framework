@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - **GitLab CI**: Fixed missing `build` and `security` stages definition
 - **GitLab CI**: Corrected path to test summary script (`bin/reporting/test-summary.sh`)
+- **GitHub Actions**: Added k6 installation step to smoke-test job using `grafana/setup-k6-action@v1`
 
 ## [1.10.1] - 2025-12-03
 

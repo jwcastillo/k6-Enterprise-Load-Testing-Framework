@@ -23,6 +23,6 @@ RUN npm run build
 RUN chmod +x bin/testing/run-test.sh
 
 # Set entrypoint to use the wrapper script
-# Usage: docker run k6-runner --client=latam --test=example.ts
+# Usage: docker run k6-runner --client=examples --test=example.ts
 ENTRYPOINT ["./bin/testing/run-test.sh"]
 

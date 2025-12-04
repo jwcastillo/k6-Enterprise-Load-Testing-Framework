@@ -114,7 +114,7 @@ test:smoke:
   stage: test
   script:
     - chmod +x bin/testing/run-test.sh
-    - ./bin/testing/run-test.sh --client="latam" --test="example.ts" --env="default"
+    - ./bin/testing/run-test.sh --client="examples" --test="example.ts" --env="default"
 ```
 
 ### GitHub Actions
@@ -125,7 +125,7 @@ The `.github/workflows/ci.yml` also uses the wrapper:
 - name: Run Smoke Test
   run: |
     chmod +x bin/testing/run-test.sh
-    ./bin/testing/run-test.sh --client="latam" --test="example.ts" --env="default"
+    ./bin/testing/run-test.sh --client="examples" --test="example.ts" --env="default"
 ```
 
 ## 📝 Examples
@@ -133,25 +133,25 @@ The `.github/workflows/ci.yml` also uses the wrapper:
 ### Quick Smoke Test
 
 ```bash
-./bin/testing/run-test.sh --client=latam --test=example.ts --profile=smoke
+./bin/testing/run-test.sh --client=examples --test=example.ts --profile=smoke
 ```
 
 ### Load Test with Staging Environment
 
 ```bash
-./bin/testing/run-test.sh --client=latam --test=checkout-flow.ts --env=staging --profile=load
+./bin/testing/run-test.sh --client=examples --test=checkout-flow.ts --env=staging --profile=load
 ```
 
 ### Stress Test
 
 ```bash
-./bin/testing/run-test.sh --client=latam --test=api-endpoints.ts --profile=stress
+./bin/testing/run-test.sh --client=examples --test=api-endpoints.ts --profile=stress
 ```
 
 ### Browser Test (requires K6_BROWSER_ENABLED)
 
 ```bash
-K6_BROWSER_ENABLED=true ./bin/testing/run-test.sh --client=latam --test=browser-test.ts
+K6_BROWSER_ENABLED=true ./bin/testing/run-test.sh --client=examples --test=browser-test.ts
 ```
 
 ## 🐳 Running Tests with Docker
@@ -164,13 +164,13 @@ Docker Compose automatically sets up Redis and the k6 runner:
 
 ```bash
 # Basic usage
-docker-compose run k6-runner --client=latam --test=example.ts
+docker-compose run k6-runner --client=examples --test=example.ts
 
 # With custom environment
-CLIENT=latam TEST=example.ts ENV=staging docker-compose run k6-runner
+CLIENT=examples TEST=example.ts ENV=staging docker-compose run k6-runner
 
 # With load profile
-docker-compose run k6-runner --client=latam --test=example.ts --profile=smoke
+docker-compose run k6-runner --client=examples --test=example.ts --profile=smoke
 
 # Clean up after tests
 docker-compose down

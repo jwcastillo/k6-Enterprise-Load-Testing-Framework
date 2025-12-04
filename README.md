@@ -1,6 +1,6 @@
 # k6 Enterprise Load Testing Framework
 
-[![Version](https://img.shields.io/badge/version-1.10.0-blue.svg)](https://github.com/yourusername/k6-enterprise-framework)
+[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/yourusername/k6-enterprise-framework)
 [![License](https://img.shields.io/badge/license-ISC-green.svg)](LICENSE)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/yourusername/k6-enterprise-framework/actions)
 
@@ -16,10 +16,10 @@ npm install
 npm run build
 
 # Run a test (recommended method)
-./bin/testing/run-test.sh --client=latam --test=example.ts
+./bin/testing/run-test.sh --client=examples --test=example.ts
 
 # Alternative: Direct CLI usage (for advanced use cases)
-node dist/core/cli.js --client=latam --test=example.ts
+node dist/core/cli.js --client=examples --test=example.ts
 ```
 
 ## 📚 Documentation
@@ -78,14 +78,14 @@ Run tests in Docker containers with Redis support:
 
 ```bash
 # Using docker-compose (recommended)
-docker-compose run k6-runner --client=latam --test=example.ts
+docker-compose run k6-runner --client=examples --test=example.ts
 
 # With custom environment
-CLIENT=latam TEST=example.ts ENV=staging docker-compose run k6-runner
+CLIENT=examples TEST=example.ts ENV=staging docker-compose run k6-runner
 
 # Build and run manually
 docker build -t k6-runner .
-docker run -v $(pwd)/reports:/app/reports k6-runner --client=latam --test=example.ts
+docker run -v $(pwd)/reports:/app/reports k6-runner --client=examples --test=example.ts
 ```
 
 

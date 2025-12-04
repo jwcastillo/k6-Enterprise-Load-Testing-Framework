@@ -87,7 +87,7 @@ jobs:
 
       - name: Run Smoke Test
         env:
-          CLIENT: "latam"
+          CLIENT: "examples"
           TEST: "example.ts"
           ENV: "default"
         run: |

@@ -67,7 +67,7 @@ lint:typescript:
     - npm run build
   script:
     - |
-      CLIENT="${CLIENT:-local}"
+      CLIENT="${CLIENT:-examples}"
       TEST="${TEST:-example.ts}"
       ENV="${ENV:-default}"
 
@@ -97,7 +97,7 @@ run:test:
   <<: *test_template
   needs: [build]
   variables:
-    CLIENT: "local"
+    CLIENT: "examples"
     TEST: "example.ts"
     ENV: "default"
   when: manual
@@ -109,7 +109,7 @@ test:smoke:
   stage: test
   needs: [build]
   variables:
-    CLIENT: "latam"
+    CLIENT: "examples"
     TEST: "example.ts"
     ENV: "default"
   only:

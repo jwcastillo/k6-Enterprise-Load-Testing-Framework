@@ -8,11 +8,10 @@ on:
       client:
         description: "Client to test"
         required: true
-        default: "local"
+        default: "examples"
         type: choice
         options:
-          - local
-          - client-a
+          - examples
       env:
         description: "Environment"
         required: true

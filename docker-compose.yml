@@ -24,11 +24,11 @@ services:
       - ./dist:/app/dist
       - ./reports:/app/reports
     environment:
-      - CLIENT=${CLIENT:-latam}
+      - CLIENT=${CLIENT:-examples}
       - ENV=${ENV:-default}
       - TEST=${TEST:-example.ts}
       - REDIS_URL=redis://redis:6379
-    command: --client=${CLIENT:-latam} --test=${TEST:-example.ts} --env=${ENV:-default}
+    command: --client=${CLIENT:-examples} --test=${TEST:-example.ts} --env=${ENV:-default}
     depends_on:
       redis:
         condition: service_healthy

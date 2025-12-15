@@ -98,7 +98,7 @@ jobs:
 
       - name: Upload test reports
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: k6-reports-${{ github.event.inputs.client }}-${{ github.event.inputs.test }}-${{ github.run_number }}
           path: |
